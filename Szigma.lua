@@ -66,7 +66,7 @@ end
 
 -- Funkcja do znajdowania wszystkich dostępnych światów (dla UI)
 local function GetAvailableWorlds()
-    return {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village", "Tower", "Trial"}
+    return {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village"}
 end
 
 -- Reszta kodu pozostaje bez zmian (tworzenie GUI, efekty wizualne, itd.)
@@ -1673,14 +1673,12 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- Tworzenie przycisków teleportu dla wszystkich światów w odpowiedniej kolejności
+-- Tworzenie przycisków teleportu tylko dla podstawowych światów
 local worldTeleports = {
     {DisplayName = "Lobby", WorldName = "Lobby"},
     {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
     {DisplayName = "Dragon Town", WorldName = "Dragon Town"},
-    {DisplayName = "Slayer Village", WorldName = "Slayer Village"},
-    {DisplayName = "Tower", WorldName = "Tower"},
-    {DisplayName = "Trial", WorldName = "Trial"}
+    {DisplayName = "Slayer Village", WorldName = "Slayer Village"}
 }
 
 for _, worldInfo in ipairs(worldTeleports) do
