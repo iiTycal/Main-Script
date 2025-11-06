@@ -1547,21 +1547,6 @@ local function TeleportToPosition(position)
     return false
 end
 
-local function TeleportToIsland(islandName)
-    local islands = {
-        ["Spawn Island"] = CFrame.new(0, 10, 0),
-        ["Training Island"] = CFrame.new(100, 20, 100),
-        ["Battle Arena"] = CFrame.new(-200, 15, 150),
-        ["VIP Island"] = CFrame.new(300, 25, -100),
-        ["Secret Cave"] = CFrame.new(50, 5, -200)
-    }
-    
-    if islands[islandName] then
-        return TeleportToPosition(islands[islandName])
-    end
-    return false
-end
-
 local Window = OrionLib:MakeWindow({
     Name = "Hatching GUI"
 })
@@ -1649,40 +1634,66 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
-local IslandDropdown = TeleportTab:AddDropdown({
-    Name = "Select Island",
-    Options = {"Spawn Island", "Training Island", "Battle Arena", "VIP Island", "Secret Cave"},
-    Default = 1,
-    Callback = function(Value)
-        TeleportToIsland(Value)
-    end
-})
-
-local QuickTeleportLabel = TeleportTab:AddLabel("Quick Teleports:")
-
-local SpawnButton = TeleportTab:AddButton({
-    Name = "Teleport to Spawn",
+local LobbyButton = TeleportTab:AddButton({
+    Name = "Lobby",
     Callback = function()
-        TeleportToPosition(CFrame.new(0, 10, 0))
+        local targetPart = workspace.Client.Maps.Lobby.Map:GetChildren()[5]["Cube.001"]
+        if targetPart and targetPart:IsA("BasePart") then
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+            end
+        end
     end
 })
 
-local ArenaButton = TeleportTab:AddButton({
-    Name = "Teleport to Arena",
+local LeafVillageButton = TeleportTab:AddButton({
+    Name = "Leaf Village", 
     Callback = function()
-        TeleportToPosition(CFrame.new(-200, 15, 150))
+        local targetPart = workspace.Client.Maps["Leaf Village"].Map:GetChildren()[145]["Meshes/Rock export 1_Group23314.001"]
+        if targetPart and targetPart:IsA("BasePart") then
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+            end
+        end
     end
 })
 
-local CaveButton = TeleportTab:AddButton({
-    Name = "Teleport to Secret Cave",
+local DragonTownButton = TeleportTab:AddButton({
+    Name = "Dragon Town",
     Callback = function()
-        TeleportToPosition(CFrame.new(50, 5, -200))
+        local mapChildren = workspace.Client.Maps["Dragon Town"].Map:GetChildren()
+        if mapChildren[9] then
+            local secondChildren = mapChildren[9]:GetChildren()
+            if secondChildren[12] and secondChildren[12]:IsA("BasePart") then
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    character.HumanoidRootPart.CFrame = secondChildren[12].CFrame + Vector3.new(0, 3, 0)
+                end
+            end
+        end
     end
 })
 
-local TeleportInfo1 = TeleportTab:AddLabel("Teleport to different islands quickly")
-local TeleportInfo2 = TeleportTab:AddLabel("Use dropdown or quick buttons")
+local SlayerVillageButton = TeleportTab:AddButton({
+    Name = "Slayer Village", 
+    Callback = function()
+        local mapChildren = workspace.Client.Maps["Slayer Village"].Map:GetChildren()
+        if mapChildren[156] then
+            local secondChildren = mapChildren[156]:GetChildren()
+            if secondChildren[4] and secondChildren[4]:IsA("BasePart") then
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    character.HumanoidRootPart.CFrame = secondChildren[4].CFrame + Vector3.new(0, 3, 0)
+                end
+            end
+        end
+    end
+})
+
+local TeleportInfo1 = TeleportTab:AddLabel("Teleport to different locations")
+local TeleportInfo2 = TeleportTab:AddLabel("Click buttons to teleport instantly")
 
 local MiscTab = Window:MakeTab({
     Name = "Misc"
