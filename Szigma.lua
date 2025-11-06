@@ -66,7 +66,7 @@ end
 
 -- Funkcja do znajdowania wszystkich dostępnych światów (dla UI)
 local function GetAvailableWorlds()
-    return {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village", "Trial", "Tower"}
+    return {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village", "Tower", "Trial"}
 end
 
 -- Reszta kodu pozostaje bez zmian (tworzenie GUI, efekty wizualne, itd.)
@@ -1673,23 +1673,23 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- Tworzenie przycisków teleportu dla wszystkich światów
+-- Tworzenie przycisków teleportu dla wszystkich światów w odpowiedniej kolejności
 local worldTeleports = {
-    ["Lobby"] = "Lobby",
-    ["Leaf Village"] = "Leaf Village", 
-    ["Dragon Town"] = "Dragon Town",
-    ["Slayer Village"] = "Slayer Village",
-    ["Trial"] = "Trial_Join",
-    ["Tower"] = "Tower_Join"
+    {DisplayName = "Lobby", WorldName = "Lobby"},
+    {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
+    {DisplayName = "Dragon Town", WorldName = "Dragon Town"},
+    {DisplayName = "Slayer Village", WorldName = "Slayer Village"},
+    {DisplayName = "Tower", WorldName = "Tower"},
+    {DisplayName = "Trial", WorldName = "Trial"}
 }
 
-for displayName, worldName in pairs(worldTeleports) do
+for _, worldInfo in ipairs(worldTeleports) do
     local worldButton = TeleportTab:AddButton({
-        Name = displayName,
+        Name = worldInfo.DisplayName,
         Callback = function()
-            local success = TeleportToWorld(worldName)
+            local success = TeleportToWorld(worldInfo.WorldName)
             if not success then
-                warn("Could not teleport to " .. displayName)
+                warn("Could not teleport to " .. worldInfo.DisplayName)
             end
         end
     })
