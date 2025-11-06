@@ -359,7 +359,8 @@ function OrionLib:MakeWindow(WindowConfig)
         Size = UDim2.new(1, -20, 0, 30),
         BackgroundTransparency = 1,
         Name = "SocialFrame",
-        ZIndex = 10
+        ZIndex = 10,
+        Visible = false
     }, {
         Create("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
@@ -887,6 +888,12 @@ function OrionLib:MakeWindow(WindowConfig)
             
             TabContent.Visible = true
             CurrentActiveTab = TabButton
+            
+            if TabConfig.Name == "Main" then
+                SocialFrame.Visible = true
+            else
+                SocialFrame.Visible = false
+            end
         end
         
         TabButton.MouseButton1Click:Connect(ActivateTab)
@@ -1650,11 +1657,17 @@ local LobbyButton = TeleportTab:AddButton({
 local LeafVillageButton = TeleportTab:AddButton({
     Name = "Leaf Village", 
     Callback = function()
-        local targetPart = workspace.Client.Maps["Leaf Village"].Map:GetChildren()[145]["Meshes/Rock export 1_Group23314.001"]
-        if targetPart and targetPart:IsA("BasePart") then
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+        local map = workspace.Client.Maps["Leaf Village"]
+        if map then
+            local mapChildren = map.Map:GetChildren()
+            if mapChildren[145] then
+                local targetPart = mapChildren[145]:FindFirstChild("Meshes/Rock export 1_Group23314.001")
+                if targetPart and targetPart:IsA("BasePart") then
+                    local character = LocalPlayer.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+                    end
+                end
             end
         end
     end
@@ -1663,13 +1676,16 @@ local LeafVillageButton = TeleportTab:AddButton({
 local DragonTownButton = TeleportTab:AddButton({
     Name = "Dragon Town",
     Callback = function()
-        local mapChildren = workspace.Client.Maps["Dragon Town"].Map:GetChildren()
-        if mapChildren[9] then
-            local secondChildren = mapChildren[9]:GetChildren()
-            if secondChildren[12] and secondChildren[12]:IsA("BasePart") then
-                local character = LocalPlayer.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    character.HumanoidRootPart.CFrame = secondChildren[12].CFrame + Vector3.new(0, 3, 0)
+        local map = workspace.Client.Maps["Dragon Town"]
+        if map then
+            local mapChildren = map.Map:GetChildren()
+            if mapChildren[9] then
+                local secondChildren = mapChildren[9]:GetChildren()
+                if secondChildren[12] and secondChildren[12]:IsA("BasePart") then
+                    local character = LocalPlayer.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = secondChildren[12].CFrame + Vector3.new(0, 3, 0)
+                    end
                 end
             end
         end
@@ -1679,13 +1695,16 @@ local DragonTownButton = TeleportTab:AddButton({
 local SlayerVillageButton = TeleportTab:AddButton({
     Name = "Slayer Village", 
     Callback = function()
-        local mapChildren = workspace.Client.Maps["Slayer Village"].Map:GetChildren()
-        if mapChildren[156] then
-            local secondChildren = mapChildren[156]:GetChildren()
-            if secondChildren[4] and secondChildren[4]:IsA("BasePart") then
-                local character = LocalPlayer.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    character.HumanoidRootPart.CFrame = secondChildren[4].CFrame + Vector3.new(0, 3, 0)
+        local map = workspace.Client.Maps["Slayer Village"]
+        if map then
+            local mapChildren = map.Map:GetChildren()
+            if mapChildren[156] then
+                local secondChildren = mapChildren[156]:GetChildren()
+                if secondChildren[4] and secondChildren[4]:IsA("BasePart") then
+                    local character = LocalPlayer.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = secondChildren[4].CFrame + Vector3.new(0, 3, 0)
+                    end
                 end
             end
         end
