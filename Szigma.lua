@@ -31,109 +31,42 @@ for _, Interface in ipairs(game.CoreGui:GetChildren()) do
     end
 end
 
--- Funkcja do znajdowania części do teleportu
-local function FindTeleportPart(worldName)
-    local maps = workspace:FindFirstChild("Client")
-    if not maps then return nil end
-    
-    maps = maps:FindFirstChild("Maps")
-    if not maps then return nil end
-    
-    local world = maps:FindFirstChild(worldName)
-    if not world then return nil end
-    
-    local map = world:FindFirstChild("Map")
-    if not map then return nil end
-    
-    -- Szukamy pierwszej dostępnej części w mapie
-    local function findFirstPart(object)
-        if object:IsA("BasePart") then
-            return object
-        end
-        
-        for _, child in pairs(object:GetChildren()) do
-            local part = findFirstPart(child)
-            if part then
-                return part
-            end
-        end
-        return nil
-    end
-    
-    return findFirstPart(map)
-end
-
--- Funkcja do znajdowania spawn pointu
-local function FindSpawnPoint(worldName)
-    local maps = workspace:FindFirstChild("Client")
-    if not maps then return nil end
-    
-    maps = maps:FindFirstChild("Maps")
-    if not maps then return nil end
-    
-    local world = maps:FindFirstChild(worldName)
-    if not world then return nil end
-    
-    -- Szukamy spawn pointów
-    local spawns = world:FindFirstChild("Spawns") or world:FindFirstChild("Spawn")
-    if spawns then
-        local spawnPoints = spawns:GetChildren()
-        if #spawnPoints > 0 then
-            return spawnPoints[1]
-        end
-    end
-    
-    -- Szukamy części ze słowem "spawn" w nazwie
-    local function findSpawnInModel(model)
-        for _, child in pairs(model:GetDescendants()) do
-            if child:IsA("BasePart") and (string.find(string.lower(child.Name), "spawn") or string.find(string.lower(child.Name), "start")) then
-                return child
-            end
-        end
-        return nil
-    end
-    
-    return findSpawnInModel(world)
-end
-
--- Główna funkcja teleportu
+-- Funkcja teleportu używająca RemoteEvent
 local function TeleportToWorld(worldName)
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
+    local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+    if not remotes then 
+        warn("Remotes not found!")
+        return false 
+    end
+    
+    local bridge = remotes:FindFirstChild("Bridge")
+    if not bridge then 
+        warn("Bridge remote not found!")
+        return false 
+    end
+    
+    local ohString1 = "General"
+    local ohString2 = "Teleport"
+    local ohString3 = "Teleport"
+    local ohString4 = worldName
+    
+    -- Wysyłanie komendy teleportu
+    local success, result = pcall(function()
+        bridge:FireServer(ohString1, ohString2, ohString3, ohString4)
+    end)
+    
+    if success then
+        print("Successfully teleported to: " .. worldName)
+        return true
+    else
+        warn("Failed to teleport to " .. worldName .. ": " .. tostring(result))
         return false
     end
-    
-    -- Najpierw szukamy spawn pointu
-    local spawnPoint = FindSpawnPoint(worldName)
-    if spawnPoint then
-        character.HumanoidRootPart.CFrame = spawnPoint.CFrame + Vector3.new(0, 3, 0)
-        return true
-    end
-    
-    -- Jeśli nie ma spawn pointu, szukamy jakiejkolwiek części
-    local teleportPart = FindTeleportPart(worldName)
-    if teleportPart then
-        character.HumanoidRootPart.CFrame = teleportPart.CFrame + Vector3.new(0, 10, 0)
-        return true
-    end
-    
-    return false
 end
 
--- Funkcja do znajdowania wszystkich dostępnych światów
+-- Funkcja do znajdowania wszystkich dostępnych światów (dla UI)
 local function GetAvailableWorlds()
-    local worlds = {}
-    local maps = workspace:FindFirstChild("Client")
-    if not maps then return worlds end
-    
-    maps = maps:FindFirstChild("Maps")
-    if not maps then return worlds end
-    
-    for _, world in pairs(maps:GetChildren()) do
-        table.insert(worlds, world.Name)
-    end
-    
-    return worlds
+    return {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village", "Trial", "Tower"}
 end
 
 -- Reszta kodu pozostaje bez zmian (tworzenie GUI, efekty wizualne, itd.)
@@ -1740,36 +1673,26 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- Automatyczne znajdowanie dostępnych światów
-local availableWorlds = GetAvailableWorlds()
+-- Tworzenie przycisków teleportu dla wszystkich światów
+local worldTeleports = {
+    ["Lobby"] = "Lobby",
+    ["Leaf Village"] = "Leaf Village", 
+    ["Dragon Town"] = "Dragon Town",
+    ["Slayer Village"] = "Slayer Village",
+    ["Trial"] = "Trial_Join",
+    ["Tower"] = "Tower_Join"
+}
 
--- Tworzenie przycisków teleportu dla każdego dostępnego świata
-for _, worldName in pairs(availableWorlds) do
+for displayName, worldName in pairs(worldTeleports) do
     local worldButton = TeleportTab:AddButton({
-        Name = worldName,
+        Name = displayName,
         Callback = function()
             local success = TeleportToWorld(worldName)
             if not success then
-                warn("Could not teleport to " .. worldName)
+                warn("Could not teleport to " .. displayName)
             end
         end
     })
-end
-
--- Jeśli nie znaleziono żadnych światów, pokaż domyślne
-if #availableWorlds == 0 then
-    local defaultWorlds = {"Lobby", "Leaf Village", "Dragon Town", "Slayer Village"}
-    for _, worldName in pairs(defaultWorlds) do
-        local worldButton = TeleportTab:AddButton({
-            Name = worldName,
-            Callback = function()
-                local success = TeleportToWorld(worldName)
-                if not success then
-                    warn("Could not teleport to " .. worldName .. ". World not found.")
-                end
-            end
-        })
-    end
 end
 
 local TeleportInfo1 = TeleportTab:AddLabel("Teleport to different locations")
@@ -1798,6 +1721,6 @@ task.spawn(function()
 end)
 
 print("Successfully loaded! Press Right Shift to toggle GUI")
-print("Found " .. #availableWorlds .. " worlds: " .. table.concat(availableWorlds, ", "))
+print("Teleport system ready with " .. #worldTeleports .. " locations")
 
 return OrionLib
