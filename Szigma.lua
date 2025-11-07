@@ -34,13 +34,11 @@ end
 local function TeleportToWorld(worldName)
     local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
     if not remotes then 
-        warn("Remotes not found!")
         return false 
     end
     
     local bridge = remotes:FindFirstChild("Bridge")
     if not bridge then 
-        warn("Bridge remote not found!")
         return false 
     end
     
@@ -54,10 +52,8 @@ local function TeleportToWorld(worldName)
     end)
     
     if success then
-        print("Successfully teleported to: " .. worldName)
         return true
     else
-        warn("Failed to teleport to " .. worldName .. ": " .. tostring(result))
         return false
     end
 end
@@ -1386,6 +1382,10 @@ local function GetCurrentWorld()
     return "Unknown"
 end
 
+local KillAnimationEnabled = false
+local LastStarFarmTime = 0
+local StarFarmCooldown = 0.1
+
 local function StartStarFarm()
     if _G.StarFarmExecuting then
         _G.StarFarmExecuting = false
@@ -1395,6 +1395,11 @@ local function StartStarFarm()
     _G.StarFarmExecuting = true
 
     while _G.StarFarmExecuting and task.wait() do
+        local currentTime = tick()
+        if currentTime - LastStarFarmTime < StarFarmCooldown then
+            continue
+        end
+        
         local args = {
             "General",
             "Star", 
@@ -1404,12 +1409,51 @@ local function StartStarFarm()
         if remotes then
             local bridge = remotes:FindFirstChild("Bridge")
             if bridge then
-                pcall(function()
-                    bridge:FireServer(unpack(args))
+                local success = pcall(function()
+                    if KillAnimationEnabled then
+                        bridge:FireServer(unpack(args))
+                    else
+                        bridge:FireServer(unpack(args))
+                    end
                 end)
+                
+                if success then
+                    LastStarFarmTime = currentTime
+                end
             end
         end
+        
+        if not _G.StarFarmExecuting then
+            break
+        end
     end
+end
+
+local function EnableKillAnimation()
+    if KillAnimationEnabled then
+        return
+    end
+    
+    KillAnimationEnabled = true
+    
+    local success = pcall(function()
+        local CoreGui = game:GetService("CoreGui")
+        local PlayerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+        
+        if PlayerGui then
+            for _, gui in ipairs(PlayerGui:GetDescendants()) do
+                if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
+                    gui.Enabled = false
+                end
+            end
+        end
+        
+        for _, gui in ipairs(CoreGui:GetDescendants()) do
+            if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
+                gui.Enabled = false
+            end
+        end
+    end)
 end
 
 local AutoFarm = {
@@ -1529,35 +1573,26 @@ local function StartAutoFarm()
     if AutoFarm.Executing then
         AutoFarm.Executing = false
         task.wait(0.5)
-        print("AutoFarm stopped")
         return
     end
 
     if not AutoFarm.CurrentMob or not AutoFarm.CurrentWorld then
-        warn("Select both world and mob type first!")
         return
     end
 
     local currentWorld = GetCurrentWorld()
-    print("Current world: " .. currentWorld)
-    print("Target world: " .. AutoFarm.CurrentWorld)
 
     if currentWorld ~= AutoFarm.CurrentWorld then
-        print("Teleporting to " .. AutoFarm.CurrentWorld .. " before starting AutoFarm...")
         local teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
         
         if not teleportSuccess then
-            warn("Failed to teleport to " .. AutoFarm.CurrentWorld .. ". AutoFarm not started.")
             return
         end
         
         task.wait(1)
-    else
-        print("Already on target world, skipping teleport...")
     end
     
     AutoFarm.Executing = true
-    print("AutoFarm started in " .. AutoFarm.CurrentWorld .. " for " .. AutoFarm.CurrentMob)
 
     spawn(function()
         while AutoFarm.Executing do
@@ -1584,17 +1619,14 @@ local function StartAutoFarm()
                     foundAnyMob = true
                     
                     if TeleportToMob(mob) then
-                        print("Found and teleported to " .. AutoFarm.CurrentMob)
                         local mobDied = WaitForMobDeath(mob)
                         
                         if mobDied then
-                            print(AutoFarm.CurrentMob .. " defeated, waiting 5 seconds...")
                             for i = 1, 5 do
                                 if not AutoFarm.Executing then break end
                                 task.wait(1)
                             end
                         else
-                            print("Mob not defeated within timeout, continuing...")
                             task.wait(0.5)
                         end
                         break
@@ -1603,14 +1635,12 @@ local function StartAutoFarm()
             end
             
             if not foundAnyMob then
-                print("No " .. AutoFarm.CurrentMob .. " found, searching...")
                 task.wait(1)
             end
             
             if tick() % 10 < 0.1 then
                 local currentCheck = GetCurrentWorld()
                 if currentCheck ~= AutoFarm.CurrentWorld and currentCheck ~= "Unknown" then
-                    print("Detected wrong world: " .. currentCheck .. ". Stopping AutoFarm.")
                     AutoFarm.Executing = false
                     break
                 end
@@ -1618,7 +1648,6 @@ local function StartAutoFarm()
             
             task.wait(0.1)
         end
-        print("AutoFarm loop ended")
     end)
 end
 
@@ -1687,6 +1716,16 @@ local FarmToggle = HatchingTab:AddToggle({
         end
     end
 })
+
+local KillAnimationButton = HatchingTab:AddButton({
+    Name = "Kill Animation",
+    Callback = function()
+        EnableKillAnimation()
+    end
+})
+
+local KillAnimationLabel = HatchingTab:AddLabel("Disables star opening animations")
+local KillAnimationLabel2 = HatchingTab:AddLabel("Click once - works until script reset")
 
 local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
@@ -1774,10 +1813,7 @@ for _, worldInfo in ipairs(worldTeleports) do
     local worldButton = TeleportTab:AddButton({
         Name = worldInfo.DisplayName,
         Callback = function()
-            local success = TeleportToWorld(worldInfo.WorldName)
-            if not success then
-                warn("Could not teleport to " .. worldInfo.DisplayName)
-            end
+            TeleportToWorld(worldInfo.WorldName)
         end
     })
 end
@@ -1812,8 +1848,5 @@ task.spawn(function()
 end)
 
 print("Successfully loaded! Press Right Shift to toggle GUI")
-print("AutoFarm system ready - automatically teleports to selected world")
-print("Teleport system ready with " .. #worldTeleports .. " locations")
-print("Mob Type only available in Slayer Village")
 
 return OrionLib
