@@ -1640,37 +1640,30 @@ local AutoFarmTab = Window:MakeTab({
 local WorldDropdown
 local MobDropdown
 
--- ZAKTUALIZOWANA lista światów - NOWA KOLEJNOŚĆ: Leaf Village, Dragon Town, Slayer Village
+-- ZAKTUALIZOWANA lista światów - TYLKO ŚWIATY, bez opcji "Select World"
 WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
-    Options = {"Select World", "Leaf Village", "Dragon Town", "Slayer Village"},
+    Options = {"Leaf Village", "Dragon Town", "Slayer Village"},
     Default = 1,
     Callback = function(Value)
-        if Value ~= "Select World" then
-            AutoFarm.CurrentWorld = Value
-            local mobs = GetMobsInWorld(Value)
-            
-            -- Aktualizuj Mob Dropdown tylko jeśli są moby
-            if MobDropdown then
-                if #mobs > 0 then
-                    MobDropdown:Set(mobs)
-                    -- Pokaż informację, że Mob Type jest dostępny
-                    if AutoFarmInfoLabel then
-                        AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
-                    end
-                else
-                    MobDropdown:Set({"No mobs available"})
-                    AutoFarm.CurrentMob = nil
-                    -- Ukryj informację lub pokaż komunikat
-                    if AutoFarmInfoLabel then
-                        AutoFarmInfoLabel:Set("No mobs available in " .. Value)
-                    end
+        AutoFarm.CurrentWorld = Value
+        local mobs = GetMobsInWorld(Value)
+        
+        -- Aktualizuj Mob Dropdown tylko jeśli są moby
+        if MobDropdown then
+            if #mobs > 0 then
+                MobDropdown:Set(mobs)
+                -- Pokaż informację, że Mob Type jest dostępny
+                if AutoFarmInfoLabel then
+                    AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
                 end
-            end
-        else
-            AutoFarm.CurrentWorld = nil
-            if MobDropdown then
-                MobDropdown:Set({"Select World First"})
+            else
+                MobDropdown:Set({"No mobs available"})
+                AutoFarm.CurrentMob = nil
+                -- Ukryj informację lub pokaż komunikat
+                if AutoFarmInfoLabel then
+                    AutoFarmInfoLabel:Set("No mobs available in " .. Value)
+                end
             end
         end
     end
@@ -1761,9 +1754,13 @@ local AntiAFKInfo2 = MiscTab:AddLabel("Prevents getting kicked for being AFK")
 task.spawn(function()
     wait(1)
     if WorldDropdown then
-        -- Ustaw domyślnie "Select World"
-        AutoFarm.CurrentWorld = nil
-        MobDropdown:Set({"Select World First"})
+        -- Domyślnie ustawiamy Leaf Village
+        AutoFarm.CurrentWorld = "Leaf Village"
+        local mobs = GetMobsInWorld("Leaf Village")
+        MobDropdown:Set(mobs)
+        if AutoFarmInfoLabel then
+            AutoFarmInfoLabel:Set("No mobs available in Leaf Village")
+        end
     end
 end)
 
