@@ -1386,26 +1386,49 @@ local KillAnimationEnabled = false
 local LastStarFarmTime = 0
 local StarFarmCooldown = 0.1
 
--- FUNKCJA: Wirtualny lewy klik na AutoAttack
+-- POPRAWIONA FUNKCJA: Wirtualny lewy klik na AutoAttack
 local function ClickAutoAttackButton()
-    local success, result = pcall(function()
-        local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
-        if autoAttackButton and autoAttackButton:IsA("TextButton") then
-            -- Symulujemy lewy klik myszy na przycisku
+    local success = pcall(function()
+        -- Szukamy przycisku AutoAttack po pełnej ścieżce
+        local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+        local ui = playerGui:WaitForChild("UI")
+        local hud = ui:WaitForChild("HUD")
+        local bottom = hud:WaitForChild("Bottom")
+        local autoAttackButton = bottom:WaitForChild("AutoAttack")
+        
+        if autoAttackButton then
+            print("Found AutoAttack button:", autoAttackButton:GetFullName())
+            
+            -- Metoda 1: Bezpośrednie wywołanie zdarzenia MouseButton1Click
             autoAttackButton:Fire("MouseButton1Click")
+            print("Fired MouseButton1Click")
+            
+            -- Metoda 2: Krótkie opóźnienie i ponowne kliknięcie dla pewności
+            task.wait(0.1)
+            autoAttackButton:Fire("MouseButton1Click")
+            print("Fired MouseButton1Click again")
+            
             return true
+        else
+            print("AutoAttack button not found")
+            return false
         end
-        return false
     end)
     
     if not success then
-        -- Alternatywna metoda jeśli pierwsza nie zadziała
+        print("Error clicking AutoAttack button")
+        -- Alternatywna metoda
         pcall(function()
             local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
             if autoAttackButton then
-                autoAttackButton:Fire("MouseButton1Down")
-                task.wait(0.05)
-                autoAttackButton:Fire("MouseButton1Up")
+                -- Symulacja kliknięcia przez zmianę właściwości
+                if autoAttackButton:IsA("TextButton") then
+                    local originalText = autoAttackButton.Text
+                    autoAttackButton.Text = "Clicked"
+                    task.wait(0.05)
+                    autoAttackButton.Text = originalText
+                    print("Simulated click by text change")
+                end
             end
         end)
     end
@@ -1637,6 +1660,7 @@ local function StartAutoFarm()
     AutoFarm.Executing = true
 
     -- AUTOMATYCZNE KLIKNIĘCIE AUTO ATTACK PRZY STARCIE AUTOFARM
+    print("AutoFarm started - clicking AutoAttack button...")
     task.wait(0.5) -- Czekamy chwilę przed kliknięciem
     ClickAutoAttackButton()
 
