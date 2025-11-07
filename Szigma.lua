@@ -31,7 +31,6 @@ for _, Interface in ipairs(game.CoreGui:GetChildren()) do
     end
 end
 
--- Funkcja teleportu używająca RemoteEvent
 local function TeleportToWorld(worldName)
     local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
     if not remotes then 
@@ -50,7 +49,6 @@ local function TeleportToWorld(worldName)
     local ohString3 = "Teleport"
     local ohString4 = worldName
     
-    -- Wysyłanie komendy teleportu
     local success, result = pcall(function()
         bridge:FireServer(ohString1, ohString2, ohString3, ohString4)
     end)
@@ -64,12 +62,10 @@ local function TeleportToWorld(worldName)
     end
 end
 
--- Funkcja do znajdowania wszystkich dostępnych światów (dla UI)
 local function GetAvailableWorlds()
     return {"Lobby", "Leaf Village", "Slayer Village", "Dragon Town"}
 end
 
--- Reszta kodu pozostaje bez zmian (tworzenie GUI, efekty wizualne, itd.)
 local function CreateWindowStarBackground(parent)
     local backgroundContainer = Instance.new("Frame")
     backgroundContainer.Name = "WindowStarBackground"
@@ -1356,7 +1352,40 @@ function OrionLib:Destroy()
     Orion:Destroy()
 end
 
--- Reszta funkcji (StartStarFarm, AutoFarm, itd.) pozostaje bez zmian
+local function GetCurrentWorld()
+    local player = Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local position = player.Character.HumanoidRootPart.Position
+        
+        local workspace = game:GetService("Workspace")
+        
+        if workspace:FindFirstChild("SlayerVillageArea") or 
+           workspace:FindFirstChild("Slayer Village") or
+           string.find(tostring(workspace:GetChildren()), "Slayer") then
+            return "Slayer Village"
+        end
+        
+        if workspace:FindFirstChild("DragonTownArea") or 
+           workspace:FindFirstChild("Dragon Town") or
+           string.find(tostring(workspace:GetChildren()), "Dragon") then
+            return "Dragon Town"
+        end
+        
+        if workspace:FindFirstChild("LeafVillageArea") or 
+           workspace:FindFirstChild("Leaf Village") or
+           string.find(tostring(workspace:GetChildren()), "Leaf") then
+            return "Leaf Village"
+        end
+        
+        if workspace:FindFirstChild("LobbyArea") or 
+           workspace:FindFirstChild("Lobby") then
+            return "Lobby"
+        end
+    end
+    
+    return "Unknown"
+end
+
 local function StartStarFarm()
     if _G.StarFarmExecuting then
         _G.StarFarmExecuting = false
@@ -1496,11 +1525,11 @@ local function WaitForMobDeath(mob)
     return not MobExists(mob)
 end
 
--- ZAKTUALIZOWANA funkcja StartAutoFarm z automatycznym teleportem
 local function StartAutoFarm()
     if AutoFarm.Executing then
         AutoFarm.Executing = false
         task.wait(0.5)
+        print("AutoFarm stopped")
         return
     end
 
@@ -1509,17 +1538,23 @@ local function StartAutoFarm()
         return
     end
 
-    -- Najpierw teleportujemy do wybranej areny
-    print("Teleporting to " .. AutoFarm.CurrentWorld .. " before starting AutoFarm...")
-    local teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
-    
-    if not teleportSuccess then
-        warn("Failed to teleport to " .. AutoFarm.CurrentWorld .. ". AutoFarm not started.")
-        return
+    local currentWorld = GetCurrentWorld()
+    print("Current world: " .. currentWorld)
+    print("Target world: " .. AutoFarm.CurrentWorld)
+
+    if currentWorld ~= AutoFarm.CurrentWorld then
+        print("Teleporting to " .. AutoFarm.CurrentWorld .. " before starting AutoFarm...")
+        local teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
+        
+        if not teleportSuccess then
+            warn("Failed to teleport to " .. AutoFarm.CurrentWorld .. ". AutoFarm not started.")
+            return
+        end
+        
+        task.wait(1)
+    else
+        print("Already on target world, skipping teleport...")
     end
-    
-    -- Czekamy chwilę po teleporcie
-    task.wait(3)
     
     AutoFarm.Executing = true
     print("AutoFarm started in " .. AutoFarm.CurrentWorld .. " for " .. AutoFarm.CurrentMob)
@@ -1549,28 +1584,49 @@ local function StartAutoFarm()
                     foundAnyMob = true
                     
                     if TeleportToMob(mob) then
+                        print("Found and teleported to " .. AutoFarm.CurrentMob)
                         local mobDied = WaitForMobDeath(mob)
-                        task.wait(0.3)
+                        
+                        if mobDied then
+                            print(AutoFarm.CurrentMob .. " defeated, waiting 5 seconds...")
+                            for i = 1, 5 do
+                                if not AutoFarm.Executing then break end
+                                task.wait(1)
+                            end
+                        else
+                            print("Mob not defeated within timeout, continuing...")
+                            task.wait(0.5)
+                        end
                         break
                     end
                 end
             end
             
             if not foundAnyMob then
+                print("No " .. AutoFarm.CurrentMob .. " found, searching...")
                 task.wait(1)
+            end
+            
+            if tick() % 10 < 0.1 then
+                local currentCheck = GetCurrentWorld()
+                if currentCheck ~= AutoFarm.CurrentWorld and currentCheck ~= "Unknown" then
+                    print("Detected wrong world: " .. currentCheck .. ". Stopping AutoFarm.")
+                    AutoFarm.Executing = false
+                    break
+                end
             end
             
             task.wait(0.1)
         end
+        print("AutoFarm loop ended")
     end)
 end
 
--- ZAKTUALIZOWANA funkcja GetMobsInWorld - TYLKO Slayer Village ma moby
 local function GetMobsInWorld(worldName)
     if worldName == "Slayer Village" then
         return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
     else
-        return {} -- Pusta lista dla innych światów
+        return {}
     end
 end
 
@@ -1602,7 +1658,6 @@ local function EnableAntiAFK()
     end
 end
 
--- Tworzenie GUI
 local Window = OrionLib:MakeWindow({
     Name = "Hatching GUI"
 })
@@ -1640,7 +1695,6 @@ local AutoFarmTab = Window:MakeTab({
 local WorldDropdown
 local MobDropdown
 
--- ZAKTUALIZOWANA lista światów - TYLKO ŚWIATY, bez opcji "Select World"
 WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
     Options = {"Leaf Village", "Dragon Town", "Slayer Village"},
@@ -1649,18 +1703,15 @@ WorldDropdown = AutoFarmTab:AddDropdown({
         AutoFarm.CurrentWorld = Value
         local mobs = GetMobsInWorld(Value)
         
-        -- Aktualizuj Mob Dropdown tylko jeśli są moby
         if MobDropdown then
             if #mobs > 0 then
                 MobDropdown:Set(mobs)
-                -- Pokaż informację, że Mob Type jest dostępny
                 if AutoFarmInfoLabel then
                     AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
                 end
             else
                 MobDropdown:Set({"No mobs available"})
                 AutoFarm.CurrentMob = nil
-                -- Ukryj informację lub pokaż komunikat
                 if AutoFarmInfoLabel then
                     AutoFarmInfoLabel:Set("No mobs available in " .. Value)
                 end
@@ -1704,16 +1755,14 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
--- Dodajemy label z informacją o mobach
 local AutoFarmInfoLabel = AutoFarmTab:AddLabel("Mobs available only in Slayer Village")
-local InfoLabel4 = AutoFarmTab:AddLabel("Auto-teleports to selected world before farming")
-local InfoLabel5 = AutoFarmTab:AddLabel("Fast farming - moves immediately to next mob")
+local InfoLabel4 = AutoFarmTab:AddLabel("Auto-teleports only if not on target world")
+local InfoLabel5 = AutoFarmTab:AddLabel("5 second cooldown after killing mob")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- ZAKTUALIZOWANA lista teleportów - NOWA KOLEJNOŚĆ: Leaf Village, Dragon Town, Slayer Village
 local worldTeleports = {
     {DisplayName = "Lobby", WorldName = "Lobby"},
     {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
@@ -1750,11 +1799,9 @@ local AntiAFKButton = MiscTab:AddButton({
 local AntiAFKInfo = MiscTab:AddLabel("Click once to enable Anti-AFK permanently")
 local AntiAFKInfo2 = MiscTab:AddLabel("Prevents getting kicked for being AFK")
 
--- Automatyczne ustawienie początkowych wartości
 task.spawn(function()
     wait(1)
     if WorldDropdown then
-        -- Domyślnie ustawiamy Leaf Village
         AutoFarm.CurrentWorld = "Leaf Village"
         local mobs = GetMobsInWorld("Leaf Village")
         MobDropdown:Set(mobs)
