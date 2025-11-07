@@ -1319,6 +1319,52 @@ function OrionLib:MakeWindow(WindowConfig)
             
             return DropdownFunctions
         end
+
+        -- DODANA FUNKCJA DLA WARNINGU
+        function Elements:AddWarning(Text)
+            local WarningFrame = Create("Frame", {
+                Parent = TabContent,
+                Size = UDim2.new(1, 0, 0, 60),
+                BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+                BackgroundTransparency = 0.2,
+                LayoutOrder = 999
+            }, {
+                Create("UICorner", {CornerRadius = UDim.new(0, 8)}),
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(255, 100, 100),
+                    Thickness = 2
+                }),
+                Create("UIGradient", {
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+                        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 50, 50))
+                    }),
+                    Rotation = 90
+                }),
+                Create("TextLabel", {
+                    Size = UDim2.new(1, -20, 1, -10),
+                    Position = UDim2.new(0, 10, 0, 5),
+                    BackgroundTransparency = 1,
+                    Text = Text or "⚠️ WARNING",
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    TextSize = 12,
+                    Font = Enum.Font.GothamBold,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    TextStrokeTransparency = 0.7,
+                    TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                })
+            })
+            
+            local WarningFunctions = {}
+            function WarningFunctions:Set(NewText)
+                if WarningFrame and WarningFrame:FindFirstChild("TextLabel") then
+                    WarningFrame.TextLabel.Text = NewText
+                end
+            end
+            
+            return WarningFunctions
+        end
         
         TabContent.ChildAdded:Connect(function()
             if IsDestroyed then return end
@@ -1798,40 +1844,8 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
--- ŁADNY WARNING Z KOLORAMI
-local WarningFrame = Create("Frame", {
-    Parent = AutoFarmTab.TabContent,
-    Size = UDim2.new(1, 0, 0, 60),
-    BackgroundColor3 = Color3.fromRGB(25, 25, 25),
-    BackgroundTransparency = 0.2,
-    LayoutOrder = 999
-}, {
-    Create("UICorner", {CornerRadius = UDim.new(0, 8)}),
-    Create("UIStroke", {
-        Color = Color3.fromRGB(255, 100, 100),
-        Thickness = 2
-    }),
-    Create("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 50, 50))
-        }),
-        Rotation = 90
-    }),
-    Create("TextLabel", {
-        Size = UDim2.new(1, -20, 1, -10),
-        Position = UDim2.new(0, 10, 0, 5),
-        BackgroundTransparency = 1,
-        Text = "⚠️ REQUIRES:\nAutoAttack + AutoClick",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        TextYAlignment = Enum.TextYAlignment.Center,
-        TextStrokeTransparency = 0.7,
-        TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    })
-})
+-- UŻYCIE NOWEJ FUNKCJI DLA WARNINGU
+local Warning = AutoFarmTab:AddWarning("⚠️ REQUIRES:\nAutoAttack + AutoClick")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
