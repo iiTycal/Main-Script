@@ -384,10 +384,11 @@ function OrionLib:MakeWindow(WindowConfig)
         })
     })
     
+    -- POPRAWIONY SocialFrame - WYRÓWNANY DO LEWEJ
     local SocialFrame = Create("Frame", {
         Parent = MainWindow,
         Position = UDim2.new(0, 10, 1, -40),
-        Size = UDim2.new(1, -20, 0, 30),
+        Size = UDim2.new(0, 220, 0, 30), -- Zmniejszona szerokość
         BackgroundTransparency = 1,
         Name = "SocialFrame",
         ZIndex = 10,
@@ -396,8 +397,8 @@ function OrionLib:MakeWindow(WindowConfig)
         Create("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
             FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
-            Padding = UDim.new(0, 15)
+            HorizontalAlignment = Enum.HorizontalAlignment.Left, -- Wyrównanie do lewej
+            Padding = UDim.new(0, 10) -- Mniejszy odstęp między przyciskami
         })
     })
     
@@ -1320,7 +1321,6 @@ function OrionLib:MakeWindow(WindowConfig)
             return DropdownFunctions
         end
 
-        -- DODANA FUNKCJA DLA WARNINGU
         function Elements:AddWarning(Text)
             local WarningFrame = Create("Frame", {
                 Parent = TabContent,
@@ -1486,7 +1486,6 @@ local function EnableKillAnimation()
         local CoreGui = game:GetService("CoreGui")
         local PlayerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
         
-        -- Wyłączamy animacje w PlayerGui
         if PlayerGui then
             for _, gui in ipairs(PlayerGui:GetDescendants()) do
                 if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
@@ -1495,14 +1494,12 @@ local function EnableKillAnimation()
             end
         end
         
-        -- Wyłączamy animacje w CoreGui
         for _, gui in ipairs(CoreGui:GetDescendants()) do
             if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
                 gui.Enabled = false
             end
         end
         
-        -- NOWA ŚCIEŻKA: Wyłączamy AnimationController dla gwiazd
         local starAnimationController = workspace:FindFirstChild("Client")
         if starAnimationController then
             starAnimationController = starAnimationController:FindFirstChild("Star")
@@ -1844,7 +1841,6 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
--- UŻYCIE NOWEJ FUNKCJI DLA WARNINGU
 local Warning = AutoFarmTab:AddWarning("⚠️ REQUIRES:\nAutoAttack + AutoClick")
 
 local TeleportTab = Window:MakeTab({
