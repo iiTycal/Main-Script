@@ -1798,8 +1798,40 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
--- DODANE OSTRZEŻENIE
-local WarningLabel = AutoFarmTab:AddLabel("WARNING: You need to have AutoAttack and AutoClick enabled for this to work properly!")
+-- ŁADNY WARNING Z KOLORAMI
+local WarningFrame = Create("Frame", {
+    Parent = AutoFarmTab.TabContent,
+    Size = UDim2.new(1, 0, 0, 60),
+    BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+    BackgroundTransparency = 0.2,
+    LayoutOrder = 999
+}, {
+    Create("UICorner", {CornerRadius = UDim.new(0, 8)}),
+    Create("UIStroke", {
+        Color = Color3.fromRGB(255, 100, 100),
+        Thickness = 2
+    }),
+    Create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 50, 50))
+        }),
+        Rotation = 90
+    }),
+    Create("TextLabel", {
+        Size = UDim2.new(1, -20, 1, -10),
+        Position = UDim2.new(0, 10, 0, 5),
+        BackgroundTransparency = 1,
+        Text = "⚠️ REQUIRES:\nAutoAttack + AutoClick",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        TextStrokeTransparency = 0.7,
+        TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    })
+})
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
