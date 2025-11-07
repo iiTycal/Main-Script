@@ -1386,54 +1386,6 @@ local KillAnimationEnabled = false
 local LastStarFarmTime = 0
 local StarFarmCooldown = 0.1
 
--- POPRAWIONA FUNKCJA: Wirtualny lewy klik na AutoAttack
-local function ClickAutoAttackButton()
-    local success = pcall(function()
-        -- Szukamy przycisku AutoAttack po pełnej ścieżce
-        local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-        local ui = playerGui:WaitForChild("UI")
-        local hud = ui:WaitForChild("HUD")
-        local bottom = hud:WaitForChild("Bottom")
-        local autoAttackButton = bottom:WaitForChild("AutoAttack")
-        
-        if autoAttackButton then
-            print("Found AutoAttack button:", autoAttackButton:GetFullName())
-            
-            -- Metoda 1: Bezpośrednie wywołanie zdarzenia MouseButton1Click
-            autoAttackButton:Fire("MouseButton1Click")
-            print("Fired MouseButton1Click")
-            
-            -- Metoda 2: Krótkie opóźnienie i ponowne kliknięcie dla pewności
-            task.wait(0.1)
-            autoAttackButton:Fire("MouseButton1Click")
-            print("Fired MouseButton1Click again")
-            
-            return true
-        else
-            print("AutoAttack button not found")
-            return false
-        end
-    end)
-    
-    if not success then
-        print("Error clicking AutoAttack button")
-        -- Alternatywna metoda
-        pcall(function()
-            local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
-            if autoAttackButton then
-                -- Symulacja kliknięcia przez zmianę właściwości
-                if autoAttackButton:IsA("TextButton") then
-                    local originalText = autoAttackButton.Text
-                    autoAttackButton.Text = "Clicked"
-                    task.wait(0.05)
-                    autoAttackButton.Text = originalText
-                    print("Simulated click by text change")
-                end
-            end
-        end)
-    end
-end
-
 local function StartStarFarm()
     if _G.StarFarmExecuting then
         _G.StarFarmExecuting = false
@@ -1659,11 +1611,6 @@ local function StartAutoFarm()
     
     AutoFarm.Executing = true
 
-    -- AUTOMATYCZNE KLIKNIĘCIE AUTO ATTACK PRZY STARCIE AUTOFARM
-    print("AutoFarm started - clicking AutoAttack button...")
-    task.wait(0.5) -- Czekamy chwilę przed kliknięciem
-    ClickAutoAttackButton()
-
     spawn(function()
         while AutoFarm.Executing do
             local foundAnyMob = false
@@ -1816,15 +1763,9 @@ WorldDropdown = AutoFarmTab:AddDropdown({
         if MobDropdown then
             if #mobs > 0 then
                 MobDropdown:Set(mobs)
-                if AutoFarmInfoLabel then
-                    AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
-                end
             else
                 MobDropdown:Set({"No mobs available"})
                 AutoFarm.CurrentMob = nil
-                if AutoFarmInfoLabel then
-                    AutoFarmInfoLabel:Set("No mobs available in " .. Value)
-                end
             end
         end
     end
@@ -1865,10 +1806,12 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
-local AutoFarmInfoLabel = AutoFarmTab:AddLabel("Mobs available only in Slayer Village")
-local InfoLabel4 = AutoFarmTab:AddLabel("Auto-teleports only if not on target world")
-local InfoLabel5 = AutoFarmTab:AddLabel("5 second cooldown after killing mob")
-local AutoAttackInfo = AutoFarmTab:AddLabel("AutoAttack enabled automatically with Auto Farm")
+-- DODANY ŁADNY WARNING
+local WarningLabel1 = AutoFarmTab:AddLabel("⚠️ IMPORTANT REQUIREMENTS ⚠️")
+local WarningLabel2 = AutoFarmTab:AddLabel("Auto Farm requires both:")
+local WarningLabel3 = AutoFarmTab:AddLabel("• AutoAttack enabled IN-GAME")
+local WarningLabel4 = AutoFarmTab:AddLabel("• Auto Clicker for optimal performance")
+local WarningLabel5 = AutoFarmTab:AddLabel("Make sure these are active before starting!")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
@@ -1913,9 +1856,6 @@ task.spawn(function()
         AutoFarm.CurrentWorld = "Leaf Village"
         local mobs = GetMobsInWorld("Leaf Village")
         MobDropdown:Set(mobs)
-        if AutoFarmInfoLabel then
-            AutoFarmInfoLabel:Set("No mobs available in Leaf Village")
-        end
     end
 end)
 
