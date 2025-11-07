@@ -1640,30 +1640,37 @@ local AutoFarmTab = Window:MakeTab({
 local WorldDropdown
 local MobDropdown
 
--- ZAKTUALIZOWANA lista światów - z dodanym Dragon Town
+-- ZAKTUALIZOWANA lista światów - NOWA KOLEJNOŚĆ: Leaf Village, Dragon Town, Slayer Village
 WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
-    Options = {"Leaf Village", "Slayer Village", "Dragon Town"},
+    Options = {"Select World", "Leaf Village", "Dragon Town", "Slayer Village"},
     Default = 1,
     Callback = function(Value)
-        AutoFarm.CurrentWorld = Value
-        local mobs = GetMobsInWorld(Value)
-        
-        -- Aktualizuj Mob Dropdown tylko jeśli są moby
-        if MobDropdown then
-            if #mobs > 0 then
-                MobDropdown:Set(mobs)
-                -- Pokaż informację, że Mob Type jest dostępny
-                if AutoFarmInfoLabel then
-                    AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
+        if Value ~= "Select World" then
+            AutoFarm.CurrentWorld = Value
+            local mobs = GetMobsInWorld(Value)
+            
+            -- Aktualizuj Mob Dropdown tylko jeśli są moby
+            if MobDropdown then
+                if #mobs > 0 then
+                    MobDropdown:Set(mobs)
+                    -- Pokaż informację, że Mob Type jest dostępny
+                    if AutoFarmInfoLabel then
+                        AutoFarmInfoLabel:Set("Mob Type available for " .. Value)
+                    end
+                else
+                    MobDropdown:Set({"No mobs available"})
+                    AutoFarm.CurrentMob = nil
+                    -- Ukryj informację lub pokaż komunikat
+                    if AutoFarmInfoLabel then
+                        AutoFarmInfoLabel:Set("No mobs available in " .. Value)
+                    end
                 end
-            else
-                MobDropdown:Set({"No mobs available"})
-                AutoFarm.CurrentMob = nil
-                -- Ukryj informację lub pokaż komunikat
-                if AutoFarmInfoLabel then
-                    AutoFarmInfoLabel:Set("No mobs available in " .. Value)
-                end
+            end
+        else
+            AutoFarm.CurrentWorld = nil
+            if MobDropdown then
+                MobDropdown:Set({"Select World First"})
             end
         end
     end
@@ -1671,10 +1678,10 @@ WorldDropdown = AutoFarmTab:AddDropdown({
 
 MobDropdown = AutoFarmTab:AddDropdown({
     Name = "Mob Type",
-    Options = {"Select Slayer Village first"},
+    Options = {"Select World First"},
     Default = 1,
     Callback = function(Value)
-        if Value ~= "No mobs available" and Value ~= "Select Slayer Village first" then
+        if Value ~= "No mobs available" and Value ~= "Select World First" then
             AutoFarm.CurrentMob = Value
         else
             AutoFarm.CurrentMob = nil
@@ -1713,12 +1720,12 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- ZAKTUALIZOWANA lista teleportów - z dodanym Dragon Town
+-- ZAKTUALIZOWANA lista teleportów - NOWA KOLEJNOŚĆ: Leaf Village, Dragon Town, Slayer Village
 local worldTeleports = {
     {DisplayName = "Lobby", WorldName = "Lobby"},
     {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
-    {DisplayName = "Slayer Village", WorldName = "Slayer Village"},
-    {DisplayName = "Dragon Town", WorldName = "Dragon Town"}
+    {DisplayName = "Dragon Town", WorldName = "Dragon Town"},
+    {DisplayName = "Slayer Village", WorldName = "Slayer Village"}
 }
 
 for _, worldInfo in ipairs(worldTeleports) do
@@ -1754,16 +1761,15 @@ local AntiAFKInfo2 = MiscTab:AddLabel("Prevents getting kicked for being AFK")
 task.spawn(function()
     wait(1)
     if WorldDropdown then
-        -- Ustaw domyślnie Slayer Village i załaduj odpowiednie moby
-        AutoFarm.CurrentWorld = "Slayer Village"
-        local mobs = GetMobsInWorld("Slayer Village")
-        MobDropdown:Set(mobs)
+        -- Ustaw domyślnie "Select World"
+        AutoFarm.CurrentWorld = nil
+        MobDropdown:Set({"Select World First"})
     end
 end)
 
 print("Successfully loaded! Press Right Shift to toggle GUI")
 print("AutoFarm system ready - automatically teleports to selected world")
-print("Teleport system ready with " .. #worldTeleports .. " locations (including Dragon Town)")
+print("Teleport system ready with " .. #worldTeleports .. " locations")
 print("Mob Type only available in Slayer Village")
 
 return OrionLib
