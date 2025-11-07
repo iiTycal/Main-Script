@@ -1712,10 +1712,6 @@ local MainTab = Window:MakeTab({
     Name = "Main"
 })
 
-local InfoLabel = MainTab:AddLabel("Auto hatch stars for faster progression")
-local InfoLabel2 = MainTab:AddLabel("Toggle ON in Hatching tab to start farming")
-local InfoLabel3 = MainTab:AddLabel("Press Right Shift to toggle GUI")
-
 local HatchingTab = Window:MakeTab({
     Name = "Hatching"
 })
@@ -1740,10 +1736,6 @@ local KillAnimationButton = HatchingTab:AddButton({
         EnableKillAnimation()
     end
 })
-
-local KillAnimationLabel = HatchingTab:AddLabel("Disables star opening animations")
-local KillAnimationLabel2 = HatchingTab:AddLabel("Click once - works until script reset")
-local KillAnimationLabel3 = HatchingTab:AddLabel("Path: workspace.Client.Star.Model.AnimationController")
 
 local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
@@ -1806,12 +1798,8 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
--- DODANY ŁADNY WARNING
-local WarningLabel1 = AutoFarmTab:AddLabel("⚠️ IMPORTANT REQUIREMENTS ⚠️")
-local WarningLabel2 = AutoFarmTab:AddLabel("Auto Farm requires both:")
-local WarningLabel3 = AutoFarmTab:AddLabel("• AutoAttack enabled IN-GAME")
-local WarningLabel4 = AutoFarmTab:AddLabel("• Auto Clicker for optimal performance")
-local WarningLabel5 = AutoFarmTab:AddLabel("Make sure these are active before starting!")
+-- DODANE OSTRZEŻENIE
+local WarningLabel = AutoFarmTab:AddLabel("WARNING: You need to have AutoAttack and AutoClick enabled for this to work properly!")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
@@ -1833,9 +1821,6 @@ for _, worldInfo in ipairs(worldTeleports) do
     })
 end
 
-local TeleportInfo1 = TeleportTab:AddLabel("Teleport to different locations")
-local TeleportInfo2 = TeleportTab:AddLabel("Click buttons to teleport instantly")
-
 local MiscTab = Window:MakeTab({
     Name = "Misc"
 })
@@ -1846,9 +1831,6 @@ local AntiAFKButton = MiscTab:AddButton({
         EnableAntiAFK()
     end
 })
-
-local AntiAFKInfo = MiscTab:AddLabel("Click once to enable Anti-AFK permanently")
-local AntiAFKInfo2 = MiscTab:AddLabel("Prevents getting kicked for being AFK")
 
 task.spawn(function()
     wait(1)
