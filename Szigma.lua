@@ -1386,6 +1386,55 @@ local KillAnimationEnabled = false
 local LastStarFarmTime = 0
 local StarFarmCooldown = 0.1
 
+-- NOWA FUNKCJA: Auto Attack
+local AutoAttackEnabled = false
+
+local function EnableAutoAttack()
+    if AutoAttackEnabled then
+        return
+    end
+    
+    AutoAttackEnabled = true
+    
+    local function toggleAutoAttack()
+        local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
+        if autoAttackButton then
+            -- Sprawdzamy czy przycisk jest już wciśnięty
+            local isCurrentlyActive = autoAttackButton:FindFirstChild("BackgroundColor3") and autoAttackButton.BackgroundColor3 == Color3.fromRGB(255, 255, 255)
+            
+            if not isCurrentlyActive then
+                -- Symulujemy kliknięcie tylko jeśli nie jest aktywny
+                pcall(function()
+                    autoAttackButton:Fire("Click")
+                end)
+            end
+        end
+    end
+    
+    -- Włączamy auto attack przy starcie
+    toggleAutoAttack()
+    
+    -- Monitorujemy zmianę świata i ponownie włączamy auto attack
+    local lastWorld = GetCurrentWorld()
+    
+    while AutoAttackEnabled do
+        task.wait(1)
+        
+        -- Sprawdzamy czy zmieniliśmy świat
+        local currentWorld = GetCurrentWorld()
+        if currentWorld ~= lastWorld then
+            lastWorld = currentWorld
+            task.wait(2) -- Czekamy chwilę po teleporcie
+            toggleAutoAttack()
+        end
+        
+        -- Dodatkowe sprawdzenie co 30 sekund czy auto attack jest aktywny
+        if tick() % 30 < 1 then
+            toggleAutoAttack()
+        end
+    end
+end
+
 local function StartStarFarm()
     if _G.StarFarmExecuting then
         _G.StarFarmExecuting = false
@@ -1440,6 +1489,7 @@ local function EnableKillAnimation()
         local CoreGui = game:GetService("CoreGui")
         local PlayerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
         
+        -- Wyłączamy animacje w PlayerGui
         if PlayerGui then
             for _, gui in ipairs(PlayerGui:GetDescendants()) do
                 if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
@@ -1448,9 +1498,25 @@ local function EnableKillAnimation()
             end
         end
         
+        -- Wyłączamy animacje w CoreGui
         for _, gui in ipairs(CoreGui:GetDescendants()) do
             if gui:IsA("ScreenGui") and (gui.Name:find("Star") or gui.Name:find("Open") or gui.Name:find("Reward")) then
                 gui.Enabled = false
+            end
+        end
+        
+        -- NOWA ŚCIEŻKA: Wyłączamy AnimationController dla gwiazd
+        local starAnimationController = workspace:FindFirstChild("Client")
+        if starAnimationController then
+            starAnimationController = starAnimationController:FindFirstChild("Star")
+            if starAnimationController then
+                starAnimationController = starAnimationController:FindFirstChild("Model")
+                if starAnimationController then
+                    starAnimationController = starAnimationController:FindFirstChild("AnimationController")
+                    if starAnimationController then
+                        starAnimationController:Destroy()
+                    end
+                end
             end
         end
     end)
@@ -1594,6 +1660,11 @@ local function StartAutoFarm()
     
     AutoFarm.Executing = true
 
+    -- AUTOMATYCZNE WŁĄCZENIE AUTO ATTACK PRZY STARCIE AUTOFARM
+    if not AutoAttackEnabled then
+        EnableAutoAttack()
+    end
+
     spawn(function()
         while AutoFarm.Executing do
             local foundAnyMob = false
@@ -1726,6 +1797,7 @@ local KillAnimationButton = HatchingTab:AddButton({
 
 local KillAnimationLabel = HatchingTab:AddLabel("Disables star opening animations")
 local KillAnimationLabel2 = HatchingTab:AddLabel("Click once - works until script reset")
+local KillAnimationLabel3 = HatchingTab:AddLabel("Path: workspace.Client.Star.Model.AnimationController")
 
 local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
@@ -1794,9 +1866,22 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
+local AutoAttackToggle = AutoFarmTab:AddToggle({
+    Name = "Auto Attack",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            EnableAutoAttack()
+        else
+            AutoAttackEnabled = false
+        end
+    end
+})
+
 local AutoFarmInfoLabel = AutoFarmTab:AddLabel("Mobs available only in Slayer Village")
 local InfoLabel4 = AutoFarmTab:AddLabel("Auto-teleports only if not on target world")
 local InfoLabel5 = AutoFarmTab:AddLabel("5 second cooldown after killing mob")
+local AutoAttackInfo = AutoFarmTab:AddLabel("Auto Attack enabled automatically with Auto Farm")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
