@@ -384,11 +384,11 @@ function OrionLib:MakeWindow(WindowConfig)
         })
     })
     
-    -- POPRAWIONY SocialFrame - WYRÓWNANY DO LEWEJ
+    -- POPRAWIONY SocialFrame - WYŚRODKOWANY
     local SocialFrame = Create("Frame", {
         Parent = MainWindow,
-        Position = UDim2.new(0, 10, 1, -40),
-        Size = UDim2.new(0, 220, 0, 30), -- Zmniejszona szerokość
+        Position = UDim2.new(0, 0, 1, -40),
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundTransparency = 1,
         Name = "SocialFrame",
         ZIndex = 10,
@@ -397,8 +397,8 @@ function OrionLib:MakeWindow(WindowConfig)
         Create("UIListLayout", {
             SortOrder = Enum.SortOrder.LayoutOrder,
             FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Left, -- Wyrównanie do lewej
-            Padding = UDim.new(0, 10) -- Mniejszy odstęp między przyciskami
+            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            Padding = UDim.new(0, 15)
         })
     })
     
