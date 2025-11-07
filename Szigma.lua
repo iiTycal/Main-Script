@@ -1386,62 +1386,28 @@ local KillAnimationEnabled = false
 local LastStarFarmTime = 0
 local StarFarmCooldown = 0.1
 
--- POPRAWIONA FUNKCJA: Auto Attack z wirtualnym lewym kliknięciem
-local AutoAttackEnabled = false
-
-local function EnableAutoAttack()
-    if AutoAttackEnabled then
-        return
-    end
-    
-    AutoAttackEnabled = true
-    
-    local function clickAutoAttack()
+-- FUNKCJA: Wirtualny lewy klik na AutoAttack
+local function ClickAutoAttackButton()
+    local success, result = pcall(function()
         local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
         if autoAttackButton and autoAttackButton:IsA("TextButton") then
             -- Symulujemy lewy klik myszy na przycisku
-            pcall(function()
-                -- Metoda 1: Bezpośrednie wywołanie zdarzenia MouseButton1Click
-                autoAttackButton:Fire("MouseButton1Click")
-            end)
-            
-            pcall(function()
-                -- Metoda 2: Wywołanie zdarzenia MouseButton1Down i MouseButton1Up
+            autoAttackButton:Fire("MouseButton1Click")
+            return true
+        end
+        return false
+    end)
+    
+    if not success then
+        -- Alternatywna metoda jeśli pierwsza nie zadziała
+        pcall(function()
+            local autoAttackButton = game:GetService("Players").LocalPlayer.PlayerGui.UI.HUD.Bottom.AutoAttack
+            if autoAttackButton then
                 autoAttackButton:Fire("MouseButton1Down")
-                task.wait(0.1)
+                task.wait(0.05)
                 autoAttackButton:Fire("MouseButton1Up")
-            end)
-            
-            pcall(function()
-                -- Metoda 3: Użycie Activate (jeśli dostępne)
-                if autoAttackButton.Activate then
-                    autoAttackButton:Activate()
-                end
-            end)
-        end
-    end
-    
-    -- Włączamy auto attack przy starcie
-    clickAutoAttack()
-    
-    -- Monitorujemy zmianę świata i ponownie klikamy auto attack
-    local lastWorld = GetCurrentWorld()
-    
-    while AutoAttackEnabled do
-        task.wait(1)
-        
-        -- Sprawdzamy czy zmieniliśmy świat
-        local currentWorld = GetCurrentWorld()
-        if currentWorld ~= lastWorld then
-            lastWorld = currentWorld
-            task.wait(2) -- Czekamy chwilę po teleporcie
-            clickAutoAttack()
-        end
-        
-        -- Dodatkowe sprawdzenie co 30 sekund czy auto attack jest aktywny
-        if tick() % 30 < 1 then
-            clickAutoAttack()
-        end
+            end
+        end)
     end
 end
 
@@ -1670,10 +1636,9 @@ local function StartAutoFarm()
     
     AutoFarm.Executing = true
 
-    -- AUTOMATYCZNE WŁĄCZENIE AUTO ATTACK PRZY STARCIE AUTOFARM
-    if not AutoAttackEnabled then
-        EnableAutoAttack()
-    end
+    -- AUTOMATYCZNE KLIKNIĘCIE AUTO ATTACK PRZY STARCIE AUTOFARM
+    task.wait(0.5) -- Czekamy chwilę przed kliknięciem
+    ClickAutoAttackButton()
 
     spawn(function()
         while AutoFarm.Executing do
@@ -1876,23 +1841,10 @@ local ReloadButton = AutoFarmTab:AddButton({
     end
 })
 
-local AutoAttackToggle = AutoFarmTab:AddToggle({
-    Name = "Auto Attack",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            EnableAutoAttack()
-        else
-            AutoAttackEnabled = false
-        end
-    end
-})
-
 local AutoFarmInfoLabel = AutoFarmTab:AddLabel("Mobs available only in Slayer Village")
 local InfoLabel4 = AutoFarmTab:AddLabel("Auto-teleports only if not on target world")
 local InfoLabel5 = AutoFarmTab:AddLabel("5 second cooldown after killing mob")
-local AutoAttackInfo = AutoFarmTab:AddLabel("Auto Attack enabled automatically with Auto Farm")
-local AutoAttackInfo2 = AutoFarmTab:AddLabel("Uses virtual left click on AutoAttack button")
+local AutoAttackInfo = AutoFarmTab:AddLabel("AutoAttack enabled automatically with Auto Farm")
 
 local TeleportTab = Window:MakeTab({
     Name = "Teleport"
