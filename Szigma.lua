@@ -384,7 +384,6 @@ function OrionLib:MakeWindow(WindowConfig)
         })
     })
     
-    -- POPRAWIONY SocialFrame - WYŚRODKOWANY
     local SocialFrame = Create("Frame", {
         Parent = MainWindow,
         Position = UDim2.new(0, 0, 1, -40),
@@ -534,6 +533,13 @@ function OrionLib:MakeWindow(WindowConfig)
     MinimizeButton.MouseButton1Click:Connect(function()
         if IsDestroyed then return end
         if not Minimized then
+            if _G.StarFarmExecuting then
+                _G.StarFarmExecuting = false
+                if FarmToggle then
+                    FarmToggle:Set(false)
+                end
+            end
+            
             SafeTween(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 0, 0, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -562,6 +568,13 @@ function OrionLib:MakeWindow(WindowConfig)
             end
             Minimized = false
         else
+            if _G.StarFarmExecuting then
+                _G.StarFarmExecuting = false
+                if FarmToggle then
+                    FarmToggle:Set(false)
+                end
+            end
+            
             SafeTween(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 0, 0, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -594,6 +607,10 @@ function OrionLib:MakeWindow(WindowConfig)
     CloseButton.MouseButton1Click:Connect(function()
         if IsDestroyed then return end
         IsDestroyed = true
+        
+        if _G.StarFarmExecuting then
+            _G.StarFarmExecuting = false
+        end
         
         if KeybindConnection then
             KeybindConnection:Disconnect()
@@ -1435,44 +1452,60 @@ local StarFarmCooldown = 0.1
 local function StartStarFarm()
     if _G.StarFarmExecuting then
         _G.StarFarmExecuting = false
+        task.wait(0.5)
         return
     end
 
     _G.StarFarmExecuting = true
 
-    while _G.StarFarmExecuting and task.wait() do
-        local currentTime = tick()
-        if currentTime - LastStarFarmTime < StarFarmCooldown then
-            continue
-        end
-        
-        local args = {
-            "General",
-            "Star", 
-            "Open"
-        }
-        local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-        if remotes then
-            local bridge = remotes:FindFirstChild("Bridge")
-            if bridge then
-                local success = pcall(function()
-                    if KillAnimationEnabled then
-                        bridge:FireServer(unpack(args))
-                    else
-                        bridge:FireServer(unpack(args))
-                    end
-                end)
-                
-                if success then
-                    LastStarFarmTime = currentTime
+    spawn(function()
+        while _G.StarFarmExecuting and task.wait(StarFarmCooldown) do
+            if IsDestroyed or Minimized or not MainWindow.Visible then
+                _G.StarFarmExecuting = false
+                if FarmToggle then
+                    FarmToggle:Set(false)
                 end
+                break
+            end
+            
+            local args = {
+                "General",
+                "Star", 
+                "Open"
+            }
+            
+            local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+            if remotes then
+                local bridge = remotes:FindFirstChild("Bridge")
+                if bridge then
+                    local success = pcall(function()
+                        bridge:FireServer(unpack(args))
+                    end)
+                    
+                    if not success then
+                        _G.StarFarmExecuting = false
+                        if FarmToggle then
+                            FarmToggle:Set(false)
+                        end
+                        break
+                    end
+                else
+                    _G.StarFarmExecuting = false
+                    if FarmToggle then
+                        FarmToggle:Set(false)
+                    end
+                    break
+                end
+            else
+                _G.StarFarmExecuting = false
+                if FarmToggle then
+                    FarmToggle:Set(false)
+                end
+                break
             end
         end
-        
-        if not _G.StarFarmExecuting then
-            break
-        end
-    end
+        _G.StarFarmExecuting = false
+    end)
 end
 
 local function EnableKillAnimation()
