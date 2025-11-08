@@ -1428,6 +1428,51 @@ local function GetCurrentWorld()
 end
 
 local KillAnimationEnabled = false
+local LastStarFarmTime = 0
+local StarFarmCooldown = 0.1
+
+local function StartStarFarm()
+    if _G.StarFarmExecuting then
+        _G.StarFarmExecuting = false
+        return
+    end
+
+    _G.StarFarmExecuting = true
+
+    while _G.StarFarmExecuting and task.wait() do
+        local currentTime = tick()
+        if currentTime - LastStarFarmTime < StarFarmCooldown then
+            continue
+        end
+        
+        local args = {
+            "General",
+            "Star", 
+            "Open"
+        }
+        local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+        if remotes then
+            local bridge = remotes:FindFirstChild("Bridge")
+            if bridge then
+                local success = pcall(function()
+                    if KillAnimationEnabled then
+                        bridge:FireServer(unpack(args))
+                    else
+                        bridge:FireServer(unpack(args))
+                    end
+                end)
+                
+                if success then
+                    LastStarFarmTime = currentTime
+                end
+            end
+        end
+        
+        if not _G.StarFarmExecuting then
+            break
+        end
+    end
+end
 
 local function EnableKillAnimation()
     if KillAnimationEnabled then
@@ -1711,6 +1756,20 @@ local MainTab = Window:MakeTab({
 
 local HatchingTab = Window:MakeTab({
     Name = "Hatching"
+})
+
+local FarmToggle = HatchingTab:AddToggle({
+    Name = "Fast Hatch",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            StartStarFarm()
+        else
+            if _G.StarFarmExecuting then
+                _G.StarFarmExecuting = false
+            end
+        end
+    end
 })
 
 local KillAnimationButton = HatchingTab:AddButton({
