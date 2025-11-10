@@ -4,6 +4,12 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
+-- Sprawdzenie czy CoreGui istnieje
+if not game:GetService("CoreGui") then
+    warn("CoreGui not found!")
+    return
+end
+
 local OrionLib = {
     Themes = {
         Default = {
@@ -18,18 +24,31 @@ local OrionLib = {
     Flags = {}
 }
 
-local Orion = Instance.new("ScreenGui")
-Orion.Name = "Orion"
-Orion.Parent = game.CoreGui
-Orion.ResetOnSpawn = false
-Orion.DisplayOrder = 999
-Orion.ZIndexBehavior = Enum.ZIndexBehavior.Global
+-- Bezpieczne tworzenie GUI
+local Orion
+local success, result = pcall(function()
+    Orion = Instance.new("ScreenGui")
+    Orion.Name = "Orion"
+    Orion.Parent = game:GetService("CoreGui")
+    Orion.ResetOnSpawn = false
+    Orion.DisplayOrder = 999
+    Orion.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    return Orion
+end)
 
-for _, Interface in ipairs(game.CoreGui:GetChildren()) do
-    if Interface.Name == Orion.Name and Interface ~= Orion then
-        Interface:Destroy()
-    end
+if not success then
+    warn("Failed to create ScreenGui: " .. tostring(result))
+    return
 end
+
+-- Bezpieczne czyszczenie starych interfejsów
+pcall(function()
+    for _, Interface in ipairs(game:GetService("CoreGui"):GetChildren()) do
+        if Interface.Name == Orion.Name and Interface ~= Orion then
+            Interface:Destroy()
+        end
+    end
+end)
 
 local function TeleportToWorld(worldName)
     local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
@@ -63,6 +82,8 @@ local function GetAvailableWorlds()
 end
 
 local function CreateWindowStarBackground(parent)
+    if not parent then return nil end
+    
     local backgroundContainer = Instance.new("Frame")
     backgroundContainer.Name = "WindowStarBackground"
     backgroundContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -483,10 +504,12 @@ function OrionLib:MakeWindow(WindowConfig)
     end)
     
     local function SetupButtonHover(button)
+        if not button then return end
         local originalSize = button.Size
         local originalStroke = button:FindFirstChild("UIStroke")
         
         button.MouseEnter:Connect(function()
+            if not button.Parent then return end
             TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = originalSize + UDim2.new(0, 4, 0, 4)
             }):Play()
@@ -498,6 +521,7 @@ function OrionLib:MakeWindow(WindowConfig)
         end)
         
         button.MouseLeave:Connect(function()
+            if not button.Parent then return end
             TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = originalSize
             }):Play()
@@ -1390,7 +1414,9 @@ function OrionLib:MakeWindow(WindowConfig)
 end
 
 function OrionLib:Destroy()
-    Orion:Destroy()
+    if Orion then
+        Orion:Destroy()
+    end
 end
 
 local function GetCurrentWorld()
@@ -1992,10 +2018,11 @@ local AntiAFKButton = MiscTab:AddButton({
     end
 })
 
+-- AUTOMATYCZNE ŁADOWANIE MOBÓW PRZY STARCIE
 task.spawn(function()
     wait(2)
     if WorldDropdown then
-        AutoFarm.CurrentWorld = "Slayer Village" 
+        AutoFarm.CurrentWorld = "Slayer Village" -- Domyślnie świat z mobami
         local mobs = GetMobsInWorld(AutoFarm.CurrentWorld)
         MobDropdown:Set(mobs)
     end
