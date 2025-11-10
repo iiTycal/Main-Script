@@ -59,8 +59,50 @@ local function TeleportToWorld(worldName)
 end
 
 local function GetAvailableWorlds()
-    return {"Lobby", "Leaf Village", "Slayer Village", "Dragon Town"}
+    return {"Lobby", "Leaf Village", "Slayer Village", "Dragon Town", "Pirate Island"}
 end
+
+-- DODANE: Funkcja do pobierania mobów w świecie
+local function GetMobsInWorld(worldName)
+    if worldName == "Slayer Village" then
+        return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
+    elseif worldName == "Pirate Island" then
+        return {"Lucci", "Enel", "Black Mustache", "Katakure", "Kaedo"}
+    else
+        return {}
+    end
+end
+
+-- DODANE: Ścieżki dla mobów z Pirate Island
+local LucciPaths = {
+    "workspace.Client.Enemies:GetChildren()[3]",
+    "workspace.Client.Enemies.Lucci",
+    "workspace.Client.Enemies:GetChildren()[13]",
+    "workspace.Client.Enemies:GetChildren()[13].Lucci"
+}
+
+local EnelPaths = {
+    "workspace.Client.Enemies:GetChildren()[6]",
+    "workspace.Client.Enemies.Enel",
+    "workspace.Client.Enemies:GetChildren()[5]",
+    "workspace.Client.Enemies:GetChildren()[7]"
+}
+
+local BlackMustachePaths = {
+    "workspace.Client.Enemies:GetChildren()[11]",
+    "workspace.Client.Enemies:GetChildren()[12]",
+    "workspace.Client.Enemies.BlackMustache",
+    "workspace.Client.Enemies:GetChildren()[10]",
+    "workspace.Client.Enemies:GetChildren()[9]"
+}
+
+local KatakurePaths = {
+    "workspace.Client.Enemies.Katakure"
+}
+
+local KaedoPaths = {
+    "workspace.Client.Enemies.Kaedo"
+}
 
 local function CreateWindowStarBackground(parent)
     local backgroundContainer = Instance.new("Frame")
@@ -1418,6 +1460,13 @@ local function GetCurrentWorld()
             return "Leaf Village"
         end
         
+        -- DODANE: Wykrywanie Pirate Island
+        if workspace:FindFirstChild("PirateIslandArea") or 
+           workspace:FindFirstChild("Pirate Island") or
+           string.find(tostring(workspace:GetChildren()), "Pirate") then
+            return "Pirate Island"
+        end
+        
         if workspace:FindFirstChild("LobbyArea") or 
            workspace:FindFirstChild("Lobby") then
             return "Lobby"
@@ -1521,6 +1570,7 @@ local AutoFarm = {
     CurrentWorld = nil
 }
 
+-- DODANE: Ścieżki dla wszystkich mobów (Slayer Village + Pirate Island)
 local AkazePaths = {
     "workspace.Client.Enemies:GetChildren()[5]",
     "workspace.Client.Enemies.Akaze",
@@ -1558,6 +1608,7 @@ local MuzenPaths = {
     "workspace.Client.Enemies.Muzen"
 }
 
+-- DODANE: Rozszerzona funkcja GetMobFromPath o moby z Pirate Island
 local function GetMobFromPath(path, mobType)
     local success, mob = pcall(function()
         if path == "workspace.Client.Enemies.Akaze" and mobType == "Akaze" then
@@ -1570,6 +1621,16 @@ local function GetMobFromPath(path, mobType)
             return workspace.Client.Enemies:FindFirstChild("Kokoshibe")
         elseif path == "workspace.Client.Enemies.Muzen" and mobType == "Muzen" then
             return workspace.Client.Enemies:FindFirstChild("Muzen")
+        elseif path == "workspace.Client.Enemies.Lucci" and mobType == "Lucci" then
+            return workspace.Client.Enemies:FindFirstChild("Lucci")
+        elseif path == "workspace.Client.Enemies.Enel" and mobType == "Enel" then
+            return workspace.Client.Enemies:FindFirstChild("Enel")
+        elseif path == "workspace.Client.Enemies.BlackMustache" and mobType == "Black Mustache" then
+            return workspace.Client.Enemies:FindFirstChild("BlackMustache")
+        elseif path == "workspace.Client.Enemies.Katakure" and mobType == "Katakure" then
+            return workspace.Client.Enemies:FindFirstChild("Katakure")
+        elseif path == "workspace.Client.Enemies.Kaedo" and mobType == "Kaedo" then
+            return workspace.Client.Enemies:FindFirstChild("Kaedo")
         else
             local index = tonumber(path:match("%[(%d+)%]"))
             if index then
@@ -1585,6 +1646,16 @@ local function GetMobFromPath(path, mobType)
                     elseif mobType == "Kokoshibe" and (string.find(mob.Name:lower(), "kokoshibe") or mob.Name == "Kokoshibe") then
                         return mob
                     elseif mobType == "Muzen" and (string.find(mob.Name:lower(), "muzen") or mob.Name == "Muzen") then
+                        return mob
+                    elseif mobType == "Lucci" and (string.find(mob.Name:lower(), "lucci") or mob.Name == "Lucci") then
+                        return mob
+                    elseif mobType == "Enel" and (string.find(mob.Name:lower(), "enel") or mob.Name == "Enel") then
+                        return mob
+                    elseif mobType == "Black Mustache" and (string.find(mob.Name:lower(), "black") or mob.Name == "BlackMustache") then
+                        return mob
+                    elseif mobType == "Katakure" and (string.find(mob.Name:lower(), "katakure") or mob.Name == "Katakure") then
+                        return mob
+                    elseif mobType == "Kaedo" and (string.find(mob.Name:lower(), "kaedo") or mob.Name == "Kaedo") then
                         return mob
                     end
                 end
@@ -1628,6 +1699,7 @@ local function WaitForMobDeath(mob)
     return not MobExists(mob)
 end
 
+-- DODANE: Zaktualizowana funkcja StartAutoFarm z obsługą Pirate Island
 local function StartAutoFarm()
     if AutoFarm.Executing then
         AutoFarm.Executing = false
@@ -1642,7 +1714,19 @@ local function StartAutoFarm()
     local currentWorld = GetCurrentWorld()
 
     if currentWorld ~= AutoFarm.CurrentWorld then
-        local teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
+        local teleportSuccess
+        if AutoFarm.CurrentWorld == "Pirate Island" then
+            local ohString1 = "General"
+            local ohString2 = "Teleport"
+            local ohString3 = "Teleport"
+            local ohString4 = "Pirate Island"
+            local success = pcall(function()
+                game:GetService("ReplicatedStorage").Remotes.Bridge:FireServer(ohString1, ohString2, ohString3, ohString4)
+            end)
+            teleportSuccess = success
+        else
+            teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
+        end
         
         if not teleportSuccess then
             return
@@ -1668,6 +1752,16 @@ local function StartAutoFarm()
                 paths = KokoshibePaths
             elseif AutoFarm.CurrentMob == "Muzen" then
                 paths = MuzenPaths
+            elseif AutoFarm.CurrentMob == "Lucci" then
+                paths = LucciPaths
+            elseif AutoFarm.CurrentMob == "Enel" then
+                paths = EnelPaths
+            elseif AutoFarm.CurrentMob == "Black Mustache" then
+                paths = BlackMustachePaths
+            elseif AutoFarm.CurrentMob == "Katakure" then
+                paths = KatakurePaths
+            elseif AutoFarm.CurrentMob == "Kaedo" then
+                paths = KaedoPaths
             end
             
             for _, path in ipairs(paths) do
@@ -1708,14 +1802,6 @@ local function StartAutoFarm()
             task.wait(0.1)
         end
     end)
-end
-
-local function GetMobsInWorld(worldName)
-    if worldName == "Slayer Village" then
-        return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
-    else
-        return {}
-    end
 end
 
 local AntiAFKEnabled = false
@@ -1783,12 +1869,10 @@ local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
 })
 
-local WorldDropdown
-local MobDropdown
-
-WorldDropdown = AutoFarmTab:AddDropdown({
+-- DODANE: Zaktualizowany WorldDropdown z Pirate Island
+local WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
-    Options = {"Leaf Village", "Dragon Town", "Slayer Village"},
+    Options = {"Leaf Village", "Dragon Town", "Slayer Village", "Pirate Island"},
     Default = 1,
     Callback = function(Value)
         AutoFarm.CurrentWorld = Value
@@ -1805,7 +1889,7 @@ WorldDropdown = AutoFarmTab:AddDropdown({
     end
 })
 
-MobDropdown = AutoFarmTab:AddDropdown({
+local MobDropdown = AutoFarmTab:AddDropdown({
     Name = "Mob Type",
     Options = {"Select World First"},
     Default = 1,
@@ -1846,11 +1930,13 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
+-- DODANE: Zaktualizowana lista teleportów z Pirate Island
 local worldTeleports = {
     {DisplayName = "Lobby", WorldName = "Lobby"},
     {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
     {DisplayName = "Dragon Town", WorldName = "Dragon Town"},
-    {DisplayName = "Slayer Village", WorldName = "Slayer Village"}
+    {DisplayName = "Slayer Village", WorldName = "Slayer Village"},
+    {DisplayName = "Pirate Island", WorldName = "Pirate Island"}
 }
 
 for _, worldInfo in ipairs(worldTeleports) do
