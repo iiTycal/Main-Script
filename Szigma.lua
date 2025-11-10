@@ -62,48 +62,6 @@ local function GetAvailableWorlds()
     return {"Lobby", "Leaf Village", "Slayer Village", "Dragon Town", "Pirate Island"}
 end
 
--- DODANE: Funkcja do pobierania mobów w świecie
-local function GetMobsInWorld(worldName)
-    if worldName == "Slayer Village" then
-        return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
-    elseif worldName == "Pirate Island" then
-        return {"Lucci", "Enel", "Black Mustache", "Katakure", "Kaedo"}
-    else
-        return {}
-    end
-end
-
--- DODANE: Ścieżki dla mobów z Pirate Island
-local LucciPaths = {
-    "workspace.Client.Enemies:GetChildren()[3]",
-    "workspace.Client.Enemies.Lucci",
-    "workspace.Client.Enemies:GetChildren()[13]",
-    "workspace.Client.Enemies:GetChildren()[13].Lucci"
-}
-
-local EnelPaths = {
-    "workspace.Client.Enemies:GetChildren()[6]",
-    "workspace.Client.Enemies.Enel",
-    "workspace.Client.Enemies:GetChildren()[5]",
-    "workspace.Client.Enemies:GetChildren()[7]"
-}
-
-local BlackMustachePaths = {
-    "workspace.Client.Enemies:GetChildren()[11]",
-    "workspace.Client.Enemies:GetChildren()[12]",
-    "workspace.Client.Enemies.BlackMustache",
-    "workspace.Client.Enemies:GetChildren()[10]",
-    "workspace.Client.Enemies:GetChildren()[9]"
-}
-
-local KatakurePaths = {
-    "workspace.Client.Enemies.Katakure"
-}
-
-local KaedoPaths = {
-    "workspace.Client.Enemies.Kaedo"
-}
-
 local function CreateWindowStarBackground(parent)
     local backgroundContainer = Instance.new("Frame")
     backgroundContainer.Name = "WindowStarBackground"
@@ -1460,7 +1418,6 @@ local function GetCurrentWorld()
             return "Leaf Village"
         end
         
-        -- DODANE: Wykrywanie Pirate Island
         if workspace:FindFirstChild("PirateIslandArea") or 
            workspace:FindFirstChild("Pirate Island") or
            string.find(tostring(workspace:GetChildren()), "Pirate") then
@@ -1509,7 +1466,7 @@ local function StartStarFarm()
                     else
                         bridge:FireServer(unpack(args))
                     end
-                end)
+                })
                 
                 if success then
                     LastStarFarmTime = currentTime
@@ -1570,7 +1527,56 @@ local AutoFarm = {
     CurrentWorld = nil
 }
 
--- DODANE: Ścieżki dla wszystkich mobów (Slayer Village + Pirate Island)
+-- NAJLEPSZA FUNKCJA: Automatyczne wykrywanie mobów + zapasowe listy
+local function GetMobsInWorld(worldName)
+    local mobs = {}
+    
+    -- Próba automatycznego wykrycia mobów w grze
+    pcall(function()
+        local enemiesFolder = workspace:FindFirstChild("Client")
+        if enemiesFolder then
+            enemiesFolder = enemiesFolder:FindFirstChild("Enemies")
+            if enemiesFolder then
+                for _, mob in pairs(enemiesFolder:GetChildren()) do
+                    if mob:FindFirstChild("HumanoidRootPart") then
+                        table.insert(mobs, mob.Name)
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- Jeśli znaleziono moby w grze, użyj ich
+    if #mobs > 0 then
+        local uniqueMobs = {}
+        for _, mob in pairs(mobs) do
+            uniqueMobs[mob] = true
+        end
+        
+        local sortedMobs = {}
+        for mob in pairs(uniqueMobs) do
+            table.insert(sortedMobs, mob)
+        end
+        table.sort(sortedMobs)
+        
+        return sortedMobs
+    end
+    
+    -- Zapasowe listy jeśli automatyczne wykrywanie nie działa
+    if worldName == "Slayer Village" then
+        return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
+    elseif worldName == "Pirate Island" then
+        return {"Lucci", "Enel", "Black Mustache", "Katakure", "Kaedo"}
+    elseif worldName == "Leaf Village" then
+        return {"Training Dummy", "Bandit", "Ninja"}
+    elseif worldName == "Dragon Town" then
+        return {"Dragon Warrior", "Fire Spirit", "Ice Golem"}
+    else
+        return {"Select mobs from world"}
+    end
+end
+
+-- Ścieżki dla wszystkich mobów
 local AkazePaths = {
     "workspace.Client.Enemies:GetChildren()[5]",
     "workspace.Client.Enemies.Akaze",
@@ -1608,7 +1614,37 @@ local MuzenPaths = {
     "workspace.Client.Enemies.Muzen"
 }
 
--- DODANE: Rozszerzona funkcja GetMobFromPath o moby z Pirate Island
+local LucciPaths = {
+    "workspace.Client.Enemies:GetChildren()[3]",
+    "workspace.Client.Enemies.Lucci",
+    "workspace.Client.Enemies:GetChildren()[13]",
+    "workspace.Client.Enemies:GetChildren()[13].Lucci"
+}
+
+local EnelPaths = {
+    "workspace.Client.Enemies:GetChildren()[6]",
+    "workspace.Client.Enemies.Enel",
+    "workspace.Client.Enemies:GetChildren()[5]",
+    "workspace.Client.Enemies:GetChildren()[7]"
+}
+
+local BlackMustachePaths = {
+    "workspace.Client.Enemies:GetChildren()[11]",
+    "workspace.Client.Enemies:GetChildren()[12]",
+    "workspace.Client.Enemies.BlackMustache",
+    "workspace.Client.Enemies:GetChildren()[10]",
+    "workspace.Client.Enemies:GetChildren()[9]"
+}
+
+local KatakurePaths = {
+    "workspace.Client.Enemies.Katakure"
+}
+
+local KaedoPaths = {
+    "workspace.Client.Enemies.Kaedo"
+}
+
+-- Rozszerzona funkcja GetMobFromPath
 local function GetMobFromPath(path, mobType)
     local success, mob = pcall(function()
         if path == "workspace.Client.Enemies.Akaze" and mobType == "Akaze" then
@@ -1699,7 +1735,6 @@ local function WaitForMobDeath(mob)
     return not MobExists(mob)
 end
 
--- DODANE: Zaktualizowana funkcja StartAutoFarm z obsługą Pirate Island
 local function StartAutoFarm()
     if AutoFarm.Executing then
         AutoFarm.Executing = false
@@ -1869,7 +1904,6 @@ local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
 })
 
--- DODANE: Zaktualizowany WorldDropdown z Pirate Island
 local WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
     Options = {"Leaf Village", "Dragon Town", "Slayer Village", "Pirate Island"},
@@ -1930,7 +1964,6 @@ local TeleportTab = Window:MakeTab({
     Name = "Teleport"
 })
 
--- DODANE: Zaktualizowana lista teleportów z Pirate Island
 local worldTeleports = {
     {DisplayName = "Lobby", WorldName = "Lobby"},
     {DisplayName = "Leaf Village", WorldName = "Leaf Village"},
@@ -1960,10 +1993,10 @@ local AntiAFKButton = MiscTab:AddButton({
 })
 
 task.spawn(function()
-    wait(1)
+    wait(2)
     if WorldDropdown then
-        AutoFarm.CurrentWorld = "Leaf Village"
-        local mobs = GetMobsInWorld("Leaf Village")
+        AutoFarm.CurrentWorld = "Slayer Village" 
+        local mobs = GetMobsInWorld(AutoFarm.CurrentWorld)
         MobDropdown:Set(mobs)
     end
 end)
