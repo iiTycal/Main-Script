@@ -4,12 +4,6 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Sprawdzenie czy CoreGui istnieje
-if not game:GetService("CoreGui") then
-    warn("CoreGui not found!")
-    return
-end
-
 local OrionLib = {
     Themes = {
         Default = {
@@ -24,31 +18,18 @@ local OrionLib = {
     Flags = {}
 }
 
--- Bezpieczne tworzenie GUI
-local Orion
-local success, result = pcall(function()
-    Orion = Instance.new("ScreenGui")
-    Orion.Name = "Orion"
-    Orion.Parent = game:GetService("CoreGui")
-    Orion.ResetOnSpawn = false
-    Orion.DisplayOrder = 999
-    Orion.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    return Orion
-end)
+local Orion = Instance.new("ScreenGui")
+Orion.Name = "Orion"
+Orion.Parent = game.CoreGui
+Orion.ResetOnSpawn = false
+Orion.DisplayOrder = 999
+Orion.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
-if not success then
-    warn("Failed to create ScreenGui: " .. tostring(result))
-    return
-end
-
--- Bezpieczne czyszczenie starych interfejsów
-pcall(function()
-    for _, Interface in ipairs(game:GetService("CoreGui"):GetChildren()) do
-        if Interface.Name == Orion.Name and Interface ~= Orion then
-            Interface:Destroy()
-        end
+for _, Interface in ipairs(game.CoreGui:GetChildren()) do
+    if Interface.Name == Orion.Name and Interface ~= Orion then
+        Interface:Destroy()
     end
-end)
+end
 
 local function TeleportToWorld(worldName)
     local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
@@ -81,9 +62,110 @@ local function GetAvailableWorlds()
     return {"Lobby", "Leaf Village", "Slayer Village", "Dragon Town", "Pirate Island"}
 end
 
-local function CreateWindowStarBackground(parent)
-    if not parent then return nil end
+-- POPRAWIONA FUNKCJA - sprawdza czy świat faktycznie ma moby
+local function GetMobsInWorld(worldName)
+    print("Checking mobs for world: " .. worldName)
     
+    -- Sprawdzamy czy w workspace są moby
+    local workspace = game:GetService("Workspace")
+    local hasEnemies = false
+    local mobsInWorld = {}
+    
+    -- Sprawdzamy czy istnieje folder z mobami
+    if workspace:FindFirstChild("Client") then
+        local client = workspace.Client
+        if client:FindFirstChild("Enemies") then
+            local enemies = client.Enemies
+            local enemyCount = #enemies:GetChildren()
+            hasEnemies = enemyCount > 0
+            
+            print("Found enemies folder with " .. enemyCount .. " enemies")
+            
+            -- Sprawdzamy konkretne moby dla każdego świata
+            if worldName == "Slayer Village" then
+                -- Sprawdzamy czy istnieją moby Slayer Village
+                local slayerMobs = {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
+                for _, mobName in pairs(slayerMobs) do
+                    if enemies:FindFirstChild(mobName) then
+                        table.insert(mobsInWorld, mobName)
+                        print("Found Slayer mob: " .. mobName)
+                    end
+                end
+                
+                -- Jeśli nie znaleźliśmy konkretnych mobów, sprawdzamy ogólnie
+                if #mobsInWorld == 0 then
+                    for _, enemy in pairs(enemies:GetChildren()) do
+                        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                            table.insert(mobsInWorld, enemy.Name)
+                            print("Found generic enemy: " .. enemy.Name)
+                        end
+                    end
+                end
+                
+            elseif worldName == "Pirate Island" then
+                -- Sprawdzamy czy istnieją moby Pirate Island
+                local pirateMobs = {"Lucci", "Enel", "BlackMustache", "Katakure", "Kaedo"}
+                for _, mobName in pairs(pirateMobs) do
+                    if enemies:FindFirstChild(mobName) then
+                        table.insert(mobsInWorld, mobName)
+                        print("Found Pirate mob: " .. mobName)
+                    end
+                end
+                
+                -- Jeśli nie znaleźliśmy konkretnych mobów, sprawdzamy ogólnie
+                if #mobsInWorld == 0 then
+                    for _, enemy in pairs(enemies:GetChildren()) do
+                        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                            table.insert(mobsInWorld, enemy.Name)
+                            print("Found generic enemy: " .. enemy.Name)
+                        end
+                    end
+                end
+                
+            elseif worldName == "Leaf Village" then
+                -- Leaf Village zwykle nie ma mobów
+                mobsInWorld = {}
+                print("Leaf Village - no mobs expected")
+                
+            elseif worldName == "Dragon Town" then
+                -- Dragon Town zwykle nie ma mobów
+                mobsInWorld = {}
+                print("Dragon Town - no mobs expected")
+                
+            else
+                -- Dla innych światów sprawdzamy ogólnie
+                for _, enemy in pairs(enemies:GetChildren()) do
+                    if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                        table.insert(mobsInWorld, enemy.Name)
+                        print("Found enemy in " .. worldName .. ": " .. enemy.Name)
+                    end
+                end
+            end
+        else
+            print("No Enemies folder found")
+        end
+    else
+        print("No Client folder found")
+    end
+    
+    -- Jeśli nie znaleźliśmy żadnych mobów, zwracamy odpowiedni komunikat
+    if #mobsInWorld == 0 then
+        print("No mobs found in " .. worldName)
+        return {"No mobs available"}
+    end
+    
+    print("Final mobs for " .. worldName .. ": " .. table.concat(mobsInWorld, ", "))
+    return mobsInWorld
+end
+
+-- Funkcja do sprawdzania czy świat ma moby
+local function WorldHasMobs(worldName)
+    local mobs = GetMobsInWorld(worldName)
+    return mobs[1] ~= "No mobs available"
+end
+
+-- Reszta kodu GUI (pozostaje bez zmian)...
+local function CreateWindowStarBackground(parent)
     local backgroundContainer = Instance.new("Frame")
     backgroundContainer.Name = "WindowStarBackground"
     backgroundContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -504,12 +586,10 @@ function OrionLib:MakeWindow(WindowConfig)
     end)
     
     local function SetupButtonHover(button)
-        if not button then return end
         local originalSize = button.Size
         local originalStroke = button:FindFirstChild("UIStroke")
         
         button.MouseEnter:Connect(function()
-            if not button.Parent then return end
             TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = originalSize + UDim2.new(0, 4, 0, 4)
             }):Play()
@@ -521,7 +601,6 @@ function OrionLib:MakeWindow(WindowConfig)
         end)
         
         button.MouseLeave:Connect(function()
-            if not button.Parent then return end
             TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = originalSize
             }):Play()
@@ -1414,9 +1493,7 @@ function OrionLib:MakeWindow(WindowConfig)
 end
 
 function OrionLib:Destroy()
-    if Orion then
-        Orion:Destroy()
-    end
+    Orion:Destroy()
 end
 
 local function GetCurrentWorld()
@@ -1492,7 +1569,7 @@ local function StartStarFarm()
                     else
                         bridge:FireServer(unpack(args))
                     end
-                })
+                end)
                 
                 if success then
                     LastStarFarmTime = currentTime
@@ -1553,56 +1630,109 @@ local AutoFarm = {
     CurrentWorld = nil
 }
 
--- NAJLEPSZA FUNKCJA: Automatyczne wykrywanie mobów + zapasowe listy
+-- POPRAWIONA FUNKCJA GetMobsInWorld - teraz sprawdza faktyczne moby w grze
 local function GetMobsInWorld(worldName)
-    local mobs = {}
+    print("Checking mobs for world: " .. worldName)
     
-    -- Próba automatycznego wykrycia mobów w grze
-    pcall(function()
-        local enemiesFolder = workspace:FindFirstChild("Client")
-        if enemiesFolder then
-            enemiesFolder = enemiesFolder:FindFirstChild("Enemies")
-            if enemiesFolder then
-                for _, mob in pairs(enemiesFolder:GetChildren()) do
-                    if mob:FindFirstChild("HumanoidRootPart") then
-                        table.insert(mobs, mob.Name)
+    -- Sprawdzamy czy w workspace są moby
+    local workspace = game:GetService("Workspace")
+    local hasEnemies = false
+    local mobsInWorld = {}
+    
+    -- Sprawdzamy czy istnieje folder z mobami
+    if workspace:FindFirstChild("Client") then
+        local client = workspace.Client
+        if client:FindFirstChild("Enemies") then
+            local enemies = client.Enemies
+            local enemyCount = #enemies:GetChildren()
+            hasEnemies = enemyCount > 0
+            
+            print("Found enemies folder with " .. enemyCount .. " enemies")
+            
+            -- Sprawdzamy konkretne moby dla każdego świata
+            if worldName == "Slayer Village" then
+                -- Sprawdzamy czy istnieją moby Slayer Village
+                local slayerMobs = {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
+                for _, mobName in pairs(slayerMobs) do
+                    if enemies:FindFirstChild(mobName) then
+                        table.insert(mobsInWorld, mobName)
+                        print("Found Slayer mob: " .. mobName)
+                    end
+                end
+                
+                -- Jeśli nie znaleźliśmy konkretnych mobów, sprawdzamy ogólnie
+                if #mobsInWorld == 0 then
+                    for _, enemy in pairs(enemies:GetChildren()) do
+                        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                            table.insert(mobsInWorld, enemy.Name)
+                            print("Found generic enemy: " .. enemy.Name)
+                        end
+                    end
+                end
+                
+            elseif worldName == "Pirate Island" then
+                -- Sprawdzamy czy istnieją moby Pirate Island
+                local pirateMobs = {"Lucci", "Enel", "BlackMustache", "Katakure", "Kaedo"}
+                for _, mobName in pairs(pirateMobs) do
+                    if enemies:FindFirstChild(mobName) then
+                        table.insert(mobsInWorld, mobName)
+                        print("Found Pirate mob: " .. mobName)
+                    end
+                end
+                
+                -- Jeśli nie znaleźliśmy konkretnych mobów, sprawdzamy ogólnie
+                if #mobsInWorld == 0 then
+                    for _, enemy in pairs(enemies:GetChildren()) do
+                        if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                            table.insert(mobsInWorld, enemy.Name)
+                            print("Found generic enemy: " .. enemy.Name)
+                        end
+                    end
+                end
+                
+            elseif worldName == "Leaf Village" then
+                -- Leaf Village zwykle nie ma mobów
+                mobsInWorld = {}
+                print("Leaf Village - no mobs expected")
+                
+            elseif worldName == "Dragon Town" then
+                -- Dragon Town zwykle nie ma mobów
+                mobsInWorld = {}
+                print("Dragon Town - no mobs expected")
+                
+            else
+                -- Dla innych światów sprawdzamy ogólnie
+                for _, enemy in pairs(enemies:GetChildren()) do
+                    if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
+                        table.insert(mobsInWorld, enemy.Name)
+                        print("Found enemy in " .. worldName .. ": " .. enemy.Name)
                     end
                 end
             end
+        else
+            print("No Enemies folder found")
         end
-    end)
-    
-    -- Jeśli znaleziono moby w grze, użyj ich
-    if #mobs > 0 then
-        local uniqueMobs = {}
-        for _, mob in pairs(mobs) do
-            uniqueMobs[mob] = true
-        end
-        
-        local sortedMobs = {}
-        for mob in pairs(uniqueMobs) do
-            table.insert(sortedMobs, mob)
-        end
-        table.sort(sortedMobs)
-        
-        return sortedMobs
-    end
-    
-    -- Zapasowe listy jeśli automatyczne wykrywanie nie działa
-    if worldName == "Slayer Village" then
-        return {"Akaze", "Dake", "Rue", "Kokoshibe", "Muzen"}
-    elseif worldName == "Pirate Island" then
-        return {"Lucci", "Enel", "Black Mustache", "Katakure", "Kaedo"}
-    elseif worldName == "Leaf Village" then
-        return {"Training Dummy", "Bandit", "Ninja"}
-    elseif worldName == "Dragon Town" then
-        return {"Dragon Warrior", "Fire Spirit", "Ice Golem"}
     else
-        return {"Select mobs from world"}
+        print("No Client folder found")
     end
+    
+    -- Jeśli nie znaleźliśmy żadnych mobów, zwracamy odpowiedni komunikat
+    if #mobsInWorld == 0 then
+        print("No mobs found in " .. worldName)
+        return {"No mobs available"}
+    end
+    
+    print("Final mobs for " .. worldName .. ": " .. table.concat(mobsInWorld, ", "))
+    return mobsInWorld
 end
 
--- Ścieżki dla wszystkich mobów
+-- Funkcja do sprawdzania czy świat ma moby
+local function WorldHasMobs(worldName)
+    local mobs = GetMobsInWorld(worldName)
+    return mobs[1] ~= "No mobs available"
+end
+
+-- Ścieżki dla mobów ze Slayer Village
 local AkazePaths = {
     "workspace.Client.Enemies:GetChildren()[5]",
     "workspace.Client.Enemies.Akaze",
@@ -1640,6 +1770,7 @@ local MuzenPaths = {
     "workspace.Client.Enemies.Muzen"
 }
 
+-- Ścieżki dla mobów z Pirate Island
 local LucciPaths = {
     "workspace.Client.Enemies:GetChildren()[3]",
     "workspace.Client.Enemies.Lucci",
@@ -1670,7 +1801,6 @@ local KaedoPaths = {
     "workspace.Client.Enemies.Kaedo"
 }
 
--- Rozszerzona funkcja GetMobFromPath
 local function GetMobFromPath(path, mobType)
     local success, mob = pcall(function()
         if path == "workspace.Client.Enemies.Akaze" and mobType == "Akaze" then
@@ -1769,40 +1899,40 @@ local function StartAutoFarm()
     end
 
     if not AutoFarm.CurrentMob or not AutoFarm.CurrentWorld then
+        print("AutoFarm: No mob or world selected")
+        return
+    end
+
+    -- Sprawdź czy wybrany świat ma moby
+    local mobs = GetMobsInWorld(AutoFarm.CurrentWorld)
+    if #mobs == 0 or mobs[1] == "No mobs available" then
+        print("AutoFarm: No mobs available in " .. AutoFarm.CurrentWorld)
         return
     end
 
     local currentWorld = GetCurrentWorld()
 
     if currentWorld ~= AutoFarm.CurrentWorld then
-        local teleportSuccess
-        if AutoFarm.CurrentWorld == "Pirate Island" then
-            local ohString1 = "General"
-            local ohString2 = "Teleport"
-            local ohString3 = "Teleport"
-            local ohString4 = "Pirate Island"
-            local success = pcall(function()
-                game:GetService("ReplicatedStorage").Remotes.Bridge:FireServer(ohString1, ohString2, ohString3, ohString4)
-            end)
-            teleportSuccess = success
-        else
-            teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
-        end
+        print("AutoFarm: Teleporting to " .. AutoFarm.CurrentWorld)
+        local teleportSuccess = TeleportToWorld(AutoFarm.CurrentWorld)
         
         if not teleportSuccess then
+            print("AutoFarm: Teleport failed")
             return
         end
         
-        task.wait(1)
+        task.wait(3)  -- Daj więcej czasu na teleport
     end
     
     AutoFarm.Executing = true
+    print("AutoFarm: Started farming " .. AutoFarm.CurrentMob .. " in " .. AutoFarm.CurrentWorld)
 
     spawn(function()
         while AutoFarm.Executing do
             local foundAnyMob = false
             local paths = {}
             
+            -- Przypisz odpowiednie ścieżki dla moba
             if AutoFarm.CurrentMob == "Akaze" then
                 paths = AkazePaths
             elseif AutoFarm.CurrentMob == "Dake" then
@@ -1831,16 +1961,20 @@ local function StartAutoFarm()
                 local mob = GetMobFromPath(path, AutoFarm.CurrentMob)
                 if MobExists(mob) then
                     foundAnyMob = true
+                    print("AutoFarm: Found mob at path: " .. path)
                     
                     if TeleportToMob(mob) then
+                        print("AutoFarm: Teleported to mob")
                         local mobDied = WaitForMobDeath(mob)
                         
                         if mobDied then
-                            for i = 1, 5 do
+                            print("AutoFarm: Mob died, waiting...")
+                            for i = 1, 3 do
                                 if not AutoFarm.Executing then break end
                                 task.wait(1)
                             end
                         else
+                            print("AutoFarm: Mob didn't die, continuing...")
                             task.wait(0.5)
                         end
                         break
@@ -1849,19 +1983,21 @@ local function StartAutoFarm()
             end
             
             if not foundAnyMob then
-                task.wait(1)
+                print("AutoFarm: No mobs found, waiting...")
+                task.wait(2)
             end
             
-            if tick() % 10 < 0.1 then
-                local currentCheck = GetCurrentWorld()
-                if currentCheck ~= AutoFarm.CurrentWorld and currentCheck ~= "Unknown" then
-                    AutoFarm.Executing = false
-                    break
-                end
+            -- Sprawdź czy nadal jesteśmy w odpowiednim świecie
+            local currentCheck = GetCurrentWorld()
+            if currentCheck ~= AutoFarm.CurrentWorld and currentCheck ~= "Unknown" then
+                print("AutoFarm: Wrong world, stopping")
+                AutoFarm.Executing = false
+                break
             end
             
             task.wait(0.1)
         end
+        print("AutoFarm: Stopped")
     end)
 end
 
@@ -1930,17 +2066,23 @@ local AutoFarmTab = Window:MakeTab({
     Name = "AutoFarm"
 })
 
+-- POPRAWIONY WorldDropdown - teraz pokazuje tylko światy z mobami
 local WorldDropdown = AutoFarmTab:AddDropdown({
     Name = "Select World",
     Options = {"Leaf Village", "Dragon Town", "Slayer Village", "Pirate Island"},
     Default = 1,
     Callback = function(Value)
+        print("World selected: " .. Value)
         AutoFarm.CurrentWorld = Value
+        
+        -- Sprawdź jakie moby są dostępne w tym świecie
         local mobs = GetMobsInWorld(Value)
+        print("Mobs for " .. Value .. ": " .. table.concat(mobs, ", "))
         
         if MobDropdown then
-            if #mobs > 0 then
+            if #mobs > 0 and mobs[1] ~= "No mobs available" then
                 MobDropdown:Set(mobs)
+                AutoFarm.CurrentMob = mobs[1]  -- Automatycznie wybierz pierwszy mob
             else
                 MobDropdown:Set({"No mobs available"})
                 AutoFarm.CurrentMob = nil
@@ -1956,6 +2098,7 @@ local MobDropdown = AutoFarmTab:AddDropdown({
     Callback = function(Value)
         if Value ~= "No mobs available" and Value ~= "Select World First" then
             AutoFarm.CurrentMob = Value
+            print("Mob selected: " .. Value)
         else
             AutoFarm.CurrentMob = nil
         end
@@ -2018,13 +2161,30 @@ local AntiAFKButton = MiscTab:AddButton({
     end
 })
 
--- AUTOMATYCZNE ŁADOWANIE MOBÓW PRZY STARCIE
+
 task.spawn(function()
     wait(2)
     if WorldDropdown then
-        AutoFarm.CurrentWorld = "Slayer Village" -- Domyślnie świat z mobami
-        local mobs = GetMobsInWorld(AutoFarm.CurrentWorld)
-        MobDropdown:Set(mobs)
+        
+        local worldsToCheck = {"Slayer Village", "Pirate Island", "Leaf Village", "Dragon Town"}
+        local foundWorld = nil
+        
+        for _, world in ipairs(worldsToCheck) do
+            local mobs = GetMobsInWorld(world)
+            if mobs[1] ~= "No mobs available" then
+                foundWorld = world
+                break
+            end
+        end
+        
+        if foundWorld then
+            AutoFarm.CurrentWorld = foundWorld
+            local mobs = GetMobsInWorld(foundWorld)
+            MobDropdown:Set(mobs)
+            print("Auto-selected world with mobs: " .. foundWorld)
+        else
+            print("No worlds with mobs found")
+        end
     end
 end)
 
